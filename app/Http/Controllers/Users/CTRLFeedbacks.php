@@ -4,17 +4,13 @@ namespace App\Http\Controllers\Users;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-
 use App\Models\Users\Feedbacks;
-
 use Gate;
-use DB;
 use Auth;
 
 class CTRLFeedbacks extends Controller
 {
-
-    public function __contruct()
+    public function __construct()
     {
         $this->middleware('auth');
     }
@@ -32,14 +28,12 @@ class CTRLFeedbacks extends Controller
      */
     public function create()
     {
-        
         // denies the gate if 
         if(Gate::denies('user-access')){
             return redirect('errors.403');
         }
         
         return view('users.feedback.create');
-
     }
 
     /**
@@ -47,20 +41,19 @@ class CTRLFeedbacks extends Controller
      */
     public function store(Request $request)
     {
-
         $request->validate([
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255'],
+            'rate' => ['required', 'in:1,3,5'],
+            'comm' => ['required', 'string', 'max:1000'],
         ]);
 
-        $user = Feedbacks::create([
+        Feedbacks::create([
             'email' => $request->email,
             'rate' => $request->rate,
             'comments' => $request->comm
         ]);
 
-        return redirect()->back()->withInput()->with('status','Feedback Submitted Successfully!');
-
-
+        return redirect()->back()->with('status', 'Feedback Submitted Successfully!');
     }
 
     /**
@@ -95,19 +88,15 @@ class CTRLFeedbacks extends Controller
         //
     }
 
-     /**
-     * Remove the specified resource from storage.
+    /**
+     * Display user's feedback list
      */
     public function myfeedback()
     {
-        //
-        $myfeedbacks = DB::table('feedbacks')
-        ->select('*')
-        ->where('email',Auth::user()->email)
-        ->paginate(1);
+        $myfeedbacks = Feedbacks::where('email', Auth::user()->email)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
         
-        return view('users.feedback.myfeedbacks')
-        ->with('myfeedbacks',$myfeedbacks);
-
+        return view('users.feedback.myfeedbacks', compact('myfeedbacks'));
     }
 }

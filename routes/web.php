@@ -14,6 +14,7 @@ use App\Http\Controllers\Users\JobController as UserJobController;
 use App\Http\Controllers\Employer\NotificationController as UserNotificationController;
 
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 
 use App\Http\Controllers\Employer\NotificationController as EmployerNotificationController;
 use App\Http\Controllers\Employer\JobController as EmployerJobController;
@@ -57,7 +58,7 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/account/update-email', [ProfileController::class, 'updateEmail'])->name('account.update.email');
     Route::put('/account/update-password', [ProfileController::class, 'updatePassword'])->name('account.update.password');
     Route::delete('/account/delete', [ProfileController::class, 'deleteAccount'])->name('account.delete');
-    
+
 });
 
 Route::get('/', [LandingController::class, 'index'])->name('home');
@@ -74,7 +75,22 @@ Route::
             Route::get('/userfeedbacks', 'UserController@userfeedback')->name('userfeedback');
 
             Route::get('/users/{user}', [UserController::class, 'viewUser'])->name('users.view');
+
+            Route::prefix('notifications')->name('notifications.')->group(function () {
+                Route::get('/', [AdminNotificationController::class, 'index'])->name('index');
+                Route::get('/{id}/mark-read', [AdminNotificationController::class, 'markAsRead'])->name('mark-read');
+                Route::post('/mark-all-read', [AdminNotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+                Route::delete('/{id}', [AdminNotificationController::class, 'destroy'])->name('destroy');
+                Route::delete('/clear-read', [AdminNotificationController::class, 'clearRead'])->name('clear-read');
+
+                // AJAX endpoints
+                Route::get('/unread-count', [AdminNotificationController::class, 'getUnreadCount'])->name('unread-count');
+                Route::get('/latest', [AdminNotificationController::class, 'getLatest'])->name('latest');
+
+            });
+
         });
+
 
 
 
@@ -96,6 +112,14 @@ Route::
 
             Route::put('/jobseeker/profile', [JobSeekerController::class, 'updateProfile'])
                 ->name('jobseeker.profile.update');
+
+            // Delete resume
+            Route::delete('/resume/delete', [JobSeekerController::class, 'deleteResume'])
+                ->name('resume.delete');
+
+            // Download resume with original filename
+            Route::get('/resume/download', [JobSeekerController::class, 'downloadResume'])
+                ->name('resume.download');
 
             Route::post('/jobs/{job}/apply', [UserApplicationController::class, 'store'])
                 ->name('jobs.apply');

@@ -86,7 +86,7 @@
                                         </label>
                                         <input type="text" name="phone" class="form-control-profile"
                                             placeholder="e.g. +1 234 567 8900"
-                                            value="{{ old('phone', $jobSeeker->phone ?? '') }}">
+                                            value="{{ old('phone', $jobSeeker->phone ?? '') }}" required>
                                     </div>
 
                                     {{-- Address --}}
@@ -94,7 +94,7 @@
                                         <label class="form-label-profile">
                                             <i class="bi bi-geo-alt me-2"></i>Address
                                         </label>
-                                        <textarea name="address" class="form-control-profile" rows="2" placeholder="Enter your full address">{{ old('address', $jobSeeker->address ?? '') }}</textarea>
+                                        <textarea name="address" class="form-control-profile" rows="2" placeholder="Enter your full address" required>{{ old('address', $jobSeeker->address ?? '') }}</textarea>
                                     </div>
 
                                     {{-- Birthdate --}}
@@ -103,7 +103,7 @@
                                             <i class="bi bi-calendar-heart me-2"></i>Date of Birth
                                         </label>
                                         <input type="date" name="birthdate" class="form-control-profile"
-                                            value="{{ old('birthdate', $jobSeeker->birthdate ?? '') }}">
+                                            value="{{ old('birthdate', $jobSeeker->birthdate ?? '') }}" required>
                                     </div>
 
                                     {{-- Gender --}}
@@ -111,7 +111,7 @@
                                         <label class="form-label-profile">
                                             <i class="bi bi-gender-ambiguous me-2"></i>Gender
                                         </label>
-                                        <select name="gender" class="form-control-profile">
+                                        <select name="gender" class="form-control-profile" required>
                                             <option value="">-- Select Gender --</option>
                                             <option value="male"
                                                 {{ old('gender', $jobSeeker->gender ?? '') == 'male' ? 'selected' : '' }}>Male
@@ -126,8 +126,6 @@
                                     </div>
                                 </div>
                             </div>
-
-
 
                         </div>
 
@@ -147,7 +145,7 @@
                                             <i class="bi bi-quote me-2"></i>About You
                                         </label>
                                         <textarea name="profile_summary" class="form-control-profile" rows="12"
-                                            placeholder="Write a brief introduction about yourself, your career goals, and what you're looking for...">{{ old('profile_summary', $jobSeeker->profile_summary ?? '') }}</textarea>
+                                            placeholder="Write a brief introduction about yourself, your career goals, and what you're looking for..." required>{{ old('profile_summary', $jobSeeker->profile_summary ?? '') }}</textarea>
                                         <small class="form-hint">This will be visible to employers</small>
                                     </div>
                                 </div>
@@ -162,7 +160,7 @@
                                 </div>
                                 <div class="card-body-custom">
                                     @if ($jobSeeker && $jobSeeker->resume)
-                                        <div class="current-file-display mb-3">
+                                        <div class="current-file-display mb-3" id="currentResumeDisplay">
                                             <div class="file-preview">
                                                 <div class="file-icon-large">
                                                     <i class="bi bi-file-earmark-pdf-fill"></i>
@@ -175,10 +173,14 @@
                                                     </small>
                                                 </div>
                                                 <div class="file-actions-large">
-                                                    <a href="{{ asset('storage/' . $jobSeeker->resume) }}" target="_blank"
-                                                        class="btn-file-preview">
-                                                        <i class="bi bi-eye-fill"></i> View
+                                                    <a href="{{ route('users.resume.download') }}"
+                                                        class="btn-file-action btn-download" title="Download resume">
+                                                        <i class="bi bi-download"></i>
                                                     </a>
+                                                    <button type="button" class="btn-file-action btn-delete-resume"
+                                                        onclick="deleteResume()" title="Delete resume">
+                                                        <i class="bi bi-trash-fill"></i>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -221,6 +223,9 @@
 
             </div>
         </div>
+
+        {{-- Add CSRF token meta tag for AJAX --}}
+        <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <style>
             @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
@@ -477,22 +482,45 @@
                 font-size: 0.8rem;
             }
 
-            .btn-file-preview {
-                background: linear-gradient(135deg, var(--secondary-color), #3DBDB4);
-                color: white;
-                padding: 0.5rem 1rem;
-                border-radius: 8px;
-                font-weight: 600;
-                font-size: 0.85rem;
-                text-decoration: none;
-                transition: all 0.3s ease;
-                box-shadow: 0 2px 8px rgba(78, 205, 196, 0.3);
+            .file-actions-large {
+                display: flex;
+                gap: 0.5rem;
             }
 
-            .btn-file-preview:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+            .btn-file-action {
+                width: 36px;
+                height: 36px;
+                border-radius: 8px;
+                border: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-size: 1rem;
+                text-decoration: none;
+            }
+
+            .btn-download {
+                background: linear-gradient(135deg, rgba(78, 205, 196, 0.15), rgba(78, 205, 196, 0.25));
+                color: var(--secondary-color);
+            }
+
+            .btn-download:hover {
+                background: var(--secondary-color);
                 color: white;
+                transform: translateY(-2px);
+            }
+
+            .btn-delete-resume {
+                background: linear-gradient(135deg, rgba(255, 107, 107, 0.15), rgba(255, 107, 107, 0.25));
+                color: #FF6B6B;
+            }
+
+            .btn-delete-resume:hover {
+                background: #FF6B6B;
+                color: white;
+                transform: translateY(-2px);
             }
 
             /* File Upload Zone */
@@ -640,6 +668,65 @@
                     });
                 }
             });
+
+            // Delete resume function
+            function deleteResume() {
+                if (!confirm('Are you sure you want to delete your resume? This action cannot be undone.')) {
+                    return;
+                }
+
+                const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+                fetch('{{ route("users.resume.delete") }}', {
+                        method: 'DELETE',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Remove the current resume display
+                            const currentResumeDisplay = document.getElementById('currentResumeDisplay');
+                            if (currentResumeDisplay) {
+                                currentResumeDisplay.style.transition = 'all 0.3s ease';
+                                currentResumeDisplay.style.opacity = '0';
+                                currentResumeDisplay.style.transform = 'translateY(-10px)';
+
+                                setTimeout(() => {
+                                    currentResumeDisplay.remove();
+                                }, 300);
+                            }
+
+                            // Update upload label text
+                            const uploadText = document.querySelector('.upload-text');
+                            if (uploadText) {
+                                uploadText.textContent = 'Upload Resume';
+                            }
+
+                            // Show success message
+                            const alertDiv = document.createElement('div');
+                            alertDiv.className = 'alert-custom alert-success mb-4';
+                            alertDiv.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>' + data.message;
+
+                            const pageHeader = document.querySelector('.page-header');
+                            pageHeader.parentNode.insertBefore(alertDiv, pageHeader.nextSibling);
+
+                            // Auto-remove alert after 3 seconds
+                            setTimeout(() => {
+                                alertDiv.remove();
+                            }, 3000);
+                        } else {
+                            alert('Error: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred while deleting the resume. Please try again.');
+                    });
+            }
         </script>
     @endsection
 @endcan

@@ -1,5 +1,5 @@
-@can('user-access')
-    @extends('layouts.Users.app')
+@can('employer-access')
+    @extends('layouts.Employer.app')
 
         @section('content')
 

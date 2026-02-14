@@ -79,13 +79,18 @@ class JobController extends Controller
         // Handle multiple template uploads
         if ($request->hasFile('application_templates')) {
             foreach ($request->file('application_templates') as $file) {
-                $filePath = $file->store('templates', 'public');
+                // Get EXACT original filename
+                $originalName = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension();
+                
+                // Store the file with EXACT original filename
+                $filePath = $file->storeAs('templates', $originalName, 'public');
 
                 JobApplicationTemplate::create([
                     'job_id' => $job->id,
-                    'file_name' => $file->getClientOriginalName(),
+                    'file_name' => $originalName,
                     'file_path' => $filePath,
-                    'file_type' => $file->getClientOriginalExtension(),
+                    'file_type' => $extension,
                 ]);
             }
         }
@@ -179,13 +184,18 @@ class JobController extends Controller
         // Handle new template uploads
         if ($request->hasFile('application_templates')) {
             foreach ($request->file('application_templates') as $file) {
-                $filePath = $file->store('templates', 'public');
+                // Get EXACT original filename
+                $originalName = $file->getClientOriginalName();
+                $extension = $file->getClientOriginalExtension();
+                
+                // Store the file with EXACT original filename
+                $filePath = $file->storeAs('templates', $originalName, 'public');
 
                 JobApplicationTemplate::create([
                     'job_id' => $job->id,
-                    'file_name' => $file->getClientOriginalName(),
+                    'file_name' => $originalName,
                     'file_path' => $filePath,
-                    'file_type' => $file->getClientOriginalExtension(),
+                    'file_type' => $extension,
                 ]);
             }
         }
@@ -203,16 +213,31 @@ class JobController extends Controller
         $job = $template->job;
 
         if ($job->employer_id !== auth()->id()) {
-            abort(403, 'Unauthorized');
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized action.'
+            ], 403);
         }
 
-        // Delete file from storage
-        Storage::disk('public')->delete($template->file_path);
+        try {
+            // Delete file from storage if it exists
+            if ($template->file_path && Storage::disk('public')->exists($template->file_path)) {
+                Storage::disk('public')->delete($template->file_path);
+            }
 
-        // Delete record
-        $template->delete();
+            // Delete database record
+            $template->delete();
 
-        return back()->with('success', 'Template deleted successfully!');
+            return response()->json([
+                'success' => true,
+                'message' => 'Template deleted successfully!'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting template: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -228,7 +253,9 @@ class JobController extends Controller
 
         // Delete all template files
         foreach ($job->templates as $template) {
-            Storage::disk('public')->delete($template->file_path);
+            if ($template->file_path && Storage::disk('public')->exists($template->file_path)) {
+                Storage::disk('public')->delete($template->file_path);
+            }
         }
 
         $job->delete();
@@ -248,6 +275,9 @@ class JobController extends Controller
             abort(404, 'File not found');
         }
 
+        // Get the filename
+        $filename = basename($template->file_path);
+
         // Set correct MIME types
         $mimeTypes = [
             'pdf' => 'application/pdf',
@@ -259,10 +289,9 @@ class JobController extends Controller
 
         $contentType = $mimeTypes[$template->file_type] ?? 'application/octet-stream';
 
-        // THIS IS THE IMPORTANT PART - "inline" makes it VIEW, not download
-        return response()->file($filePath, [
+        // Return file for download with original filename
+        return response()->download($filePath, $filename, [
             'Content-Type' => $contentType,
-            'Content-Disposition' => 'inline; filename="' . $template->file_name . '"'
         ]);
     }
 }

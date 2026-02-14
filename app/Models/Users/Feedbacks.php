@@ -16,4 +16,11 @@ class Feedbacks extends Model
         'comments'
     ];
 
+
+    // Add this to cast created_at and updated_at as Carbon instances
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
 }

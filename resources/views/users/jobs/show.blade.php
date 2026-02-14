@@ -11,7 +11,6 @@
                 </a>
             </div>
 
-
             <div class="row justify-content-center">
                 <div class="col-lg-9">
 
@@ -31,6 +30,7 @@
                     @endif
 
                     <div class="job-details-card">
+
                         {{-- JOB HEADER --}}
                         <div class="job-header">
                             <div class="job-header-content">
@@ -80,14 +80,20 @@
                                 {{ $job->requirements }}
                             </div>
 
-                            {{-- Download Template --}}
+                            {{-- Download Templates --}}
+                            @php
+                                $hasTemplates = $job->templates && $job->templates->count() > 0;
+                            @endphp
 
-                            @if ($job->templates && $job->templates->count() > 0)
+                            @if ($hasTemplates)
                                 <div class="template-download-section">
-                                    <h6 class="mb-3" style="font-weight: 600; color: var(--secondary-color);">
+                                    <h6 class="mb-3" style="font-weight: 700; color: var(--secondary-color);">
                                         <i class="bi bi-download me-2"></i>Application Templates Available
                                     </h6>
-
+                                    <p class="mb-3" style="font-size: 0.9rem; color: var(--text-muted);">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Download the template(s) below, fill them out, then upload the completed files in the application form.
+                                    </p>
                                     <div class="template-list">
                                         @foreach ($job->templates as $template)
                                             <a href="{{ asset('storage/' . $template->file_path) }}"
@@ -105,7 +111,7 @@
                             {{-- APPLICATION SECTION --}}
                             @auth
                                 @php
-                                    $user = auth()->user();
+                                    $user      = auth()->user();
                                     $jobSeeker = $user->jobSeeker;
                                     $alreadyApplied = $jobSeeker
                                         ? $job->applications()->where('job_seeker_id', $jobSeeker->id)->exists()
@@ -117,7 +123,8 @@
                                         <i class="bi bi-exclamation-circle-fill me-2"></i>
                                         You need to complete your Job Seeker profile to apply.
                                     </div>
-                                @elseif(!$jobSeeker->resume)
+
+                                @elseif (!$jobSeeker->resume)
                                     <div class="alert-custom alert-warning-custom">
                                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                                         Please upload your resume in your profile before applying to jobs.
@@ -125,11 +132,13 @@
                                             Go to Profile
                                         </a>
                                     </div>
-                                @elseif($alreadyApplied)
+
+                                @elseif ($alreadyApplied)
                                     <button class="btn-applied-disabled" disabled>
                                         <i class="bi bi-check-circle-fill"></i>
                                         Already Applied to this Job
                                     </button>
+
                                 @else
                                     <div class="application-section">
                                         <div class="application-title">
@@ -160,19 +169,151 @@
                                             enctype="multipart/form-data">
                                             @csrf
 
-                                            {{-- Application Letter Upload (Optional) --}}
-                                            <div class="mb-4">
-                                                <label class="form-label-custom">
-                                                    <i class="bi bi-file-earmark-text"></i>
-                                                    Upload Application Letter
-                                                </label>
-                                                <input type="file" name="application_letter" class="form-control-custom"
-                                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
-                                                <small class="form-hint">
-                                                    <i class="bi bi-info-circle me-1"></i>
-                                                    Accepted formats: PDF, Word, JPG, PNG (Max 2MB)
-                                                </small>
-                                            </div>
+                                            @if ($hasTemplates)
+                                                {{-- ── TEMPLATES EXIST: required upload per template ── --}}
+                                                <div class="template-upload-section-form mb-4">
+                                                    <div class="template-upload-header">
+                                                        <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                                                        <span>Upload Completed Application Templates</span>
+                                                    </div>
+                                                    <p class="template-upload-subtext">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        This job requires you to submit the completed template(s) below.
+                                                        Download each template above, fill it in, then upload it here.
+                                                    </p>
+
+                                                    <div class="template-upload-list">
+                                                        @foreach ($job->templates as $index => $template)
+                                                            <div class="template-upload-item">
+                                                                <div class="template-upload-item-label">
+                                                                    <div class="template-number">{{ $index + 1 }}</div>
+                                                                    <div>
+                                                                        <p class="template-name">{{ $template->file_name }}</p>
+                                                                        <p class="template-name-hint">
+                                                                            Download above → fill out → upload here
+                                                                        </p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="file-drop-zone"
+                                                                    id="dropZone{{ $index }}"
+                                                                    onclick="document.getElementById('templateFile{{ $index }}').click()">
+
+                                                                    <input
+                                                                        type="file"
+                                                                        id="templateFile{{ $index }}"
+                                                                        name="template_files[{{ $template->id }}]"
+                                                                        class="file-input-hidden"
+                                                                        accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                                        required
+                                                                        onchange="handleFileSelect(this, 'dropZone{{ $index }}', 'fileName{{ $index }}')"
+                                                                    >
+
+                                                                    <div class="drop-zone-content" id="dropContent{{ $index }}">
+                                                                        <i class="bi bi-cloud-upload-fill drop-zone-icon"></i>
+                                                                        <span class="drop-zone-text">Click to upload or drag & drop</span>
+                                                                        <span class="drop-zone-hint">PDF, Word, JPG, PNG · Max 2MB</span>
+                                                                    </div>
+
+                                                                    <div class="file-selected-preview d-none" id="fileName{{ $index }}">
+                                                                        <i class="bi bi-file-earmark-check-fill file-selected-icon"></i>
+                                                                        <span class="file-selected-name"></span>
+                                                                        <button type="button" class="file-clear-btn"
+                                                                            onclick="clearFile(event, 'templateFile{{ $index }}', 'dropZone{{ $index }}', 'fileName{{ $index }}')">
+                                                                            <i class="bi bi-x-lg"></i>
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
+                                                                <div class="required-badge">
+                                                                    <i class="bi bi-asterisk me-1"></i>Required
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+
+                                                {{-- Application Letter: Optional when templates exist --}}
+                                                <div class="mb-4">
+                                                    <label class="form-label-custom">
+                                                        <i class="bi bi-file-earmark-text"></i>
+                                                        Upload Application Letter
+                                                        <span class="optional-tag">Optional</span>
+                                                    </label>
+                                                    <div class="file-drop-zone" id="dropZoneLetter"
+                                                        onclick="document.getElementById('appLetterFile').click()">
+
+                                                        <input
+                                                            type="file"
+                                                            id="appLetterFile"
+                                                            name="application_letter"
+                                                            class="file-input-hidden"
+                                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                            onchange="handleFileSelect(this, 'dropZoneLetter', 'fileNameLetter')"
+                                                        >
+
+                                                        <div class="drop-zone-content" id="dropContentLetter">
+                                                            <i class="bi bi-cloud-upload-fill drop-zone-icon"></i>
+                                                            <span class="drop-zone-text">Click to upload or drag & drop</span>
+                                                            <span class="drop-zone-hint">PDF, Word, JPG, PNG · Max 2MB</span>
+                                                        </div>
+
+                                                        <div class="file-selected-preview d-none" id="fileNameLetter">
+                                                            <i class="bi bi-file-earmark-check-fill file-selected-icon"></i>
+                                                            <span class="file-selected-name"></span>
+                                                            <button type="button" class="file-clear-btn"
+                                                                onclick="clearFile(event, 'appLetterFile', 'dropZoneLetter', 'fileNameLetter')">
+                                                                <i class="bi bi-x-lg"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <small class="form-hint">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        Accepted formats: PDF, Word, JPG, PNG (Max 2MB)
+                                                    </small>
+                                                </div>
+
+                                            @else
+                                                {{-- ── NO TEMPLATES: only application letter, required ── --}}
+                                                <div class="mb-4">
+                                                    <label class="form-label-custom">
+                                                        <i class="bi bi-file-earmark-text"></i>
+                                                        Upload Application Letter
+                                                    </label>
+                                                    <div class="file-drop-zone" id="dropZoneLetter"
+                                                        onclick="document.getElementById('appLetterFile').click()">
+
+                                                        <input
+                                                            type="file"
+                                                            id="appLetterFile"
+                                                            name="application_letter"
+                                                            class="file-input-hidden"
+                                                            accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                            required
+                                                            onchange="handleFileSelect(this, 'dropZoneLetter', 'fileNameLetter')"
+                                                        >
+
+                                                        <div class="drop-zone-content" id="dropContentLetter">
+                                                            <i class="bi bi-cloud-upload-fill drop-zone-icon"></i>
+                                                            <span class="drop-zone-text">Click to upload or drag & drop</span>
+                                                            <span class="drop-zone-hint">PDF, Word, JPG, PNG · Max 2MB</span>
+                                                        </div>
+
+                                                        <div class="file-selected-preview d-none" id="fileNameLetter">
+                                                            <i class="bi bi-file-earmark-check-fill file-selected-icon"></i>
+                                                            <span class="file-selected-name"></span>
+                                                            <button type="button" class="file-clear-btn"
+                                                                onclick="clearFile(event, 'appLetterFile', 'dropZoneLetter', 'fileNameLetter')">
+                                                                <i class="bi bi-x-lg"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <small class="form-hint">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        Accepted formats: PDF, Word, JPG, PNG (Max 2MB)
+                                                    </small>
+                                                </div>
+                                            @endif
 
                                             <button type="submit" class="btn-apply-submit">
                                                 <i class="bi bi-rocket-takeoff me-2"></i>
@@ -181,7 +322,7 @@
                                         </form>
                                     </div>
                                 @endif
-                     
+
                             @endauth
                         </div>
                     </div>
@@ -212,92 +353,12 @@
                 background-color: var(--background-light);
             }
 
-            /* Navbar */
-            .navbar-custom {
-                background: rgba(255, 255, 255, 0.98);
-                backdrop-filter: blur(10px);
-                box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-                padding: 1rem 0;
-                position: sticky;
-                top: 0;
-                z-index: 1000;
-            }
-
-            .navbar-brand-custom {
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-                text-decoration: none;
-            }
-
-            .brand-icon {
-                width: 42px;
-                height: 42px;
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-                border-radius: 10px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                color: white;
-                font-size: 1.25rem;
-                box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
-                transition: all 0.3s ease;
-            }
-
-            .navbar-brand-custom:hover .brand-icon {
-                transform: rotate(-5deg) scale(1.05);
-            }
-
-            .brand-text {
-                font-size: 1.5rem;
-                font-weight: 700;
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-                background-clip: text;
-            }
-
-            .btn-nav {
-                padding: 0.6rem 1.5rem;
-                border-radius: 10px;
-                font-weight: 600;
-                transition: all 0.3s ease;
-                text-decoration: none;
-                display: inline-block;
-            }
-
-            .btn-nav-outline {
-                background: transparent;
-                color: var(--primary-color);
-                border: 2px solid var(--primary-color);
-            }
-
-            .btn-nav-outline:hover {
-                background: var(--primary-color);
-                color: white;
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
-            }
-
-            .btn-nav-primary {
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-                color: white;
-                border: none;
-                box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
-            }
-
-            .btn-nav-primary:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 16px rgba(255, 107, 53, 0.4);
-                color: white;
-            }
-
-            /* Container */
+            /* ── Container ── */
             .job-details-container {
                 padding: 3rem 0;
             }
 
-            /* Back Button */
+            /* ── Back Button ── */
             .btn-back {
                 background: white;
                 color: var(--text-dark);
@@ -309,6 +370,7 @@
                 display: inline-flex;
                 align-items: center;
                 text-decoration: none;
+                animation: fadeIn 0.4s ease-out;
             }
 
             .btn-back:hover {
@@ -326,7 +388,7 @@
                 transform: translateX(-3px);
             }
 
-            /* Alerts */
+            /* ── Alerts ── */
             .alert-custom {
                 border-radius: 12px;
                 border: none;
@@ -354,26 +416,26 @@
             }
 
             @keyframes slideDown {
-                from {
-                    opacity: 0;
-                    transform: translateY(-10px);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+                from { opacity: 0; transform: translateY(-10px); }
+                to   { opacity: 1; transform: translateY(0); }
             }
 
-            /* Job Details Card */
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translateY(20px); }
+                to   { opacity: 1; transform: translateY(0); }
+            }
+
+            /* ── Job Card ── */
             .job-details-card {
                 background: white;
                 border-radius: 16px;
                 border: none;
                 box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
                 overflow: hidden;
+                animation: fadeIn 0.5s ease-out;
             }
 
+            /* ── Job Header ── */
             .job-header {
                 background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
                 padding: 2.5rem;
@@ -385,10 +447,8 @@
             .job-header::before {
                 content: '';
                 position: absolute;
-                top: 0;
-                right: 0;
-                width: 300px;
-                height: 300px;
+                top: 0; right: 0;
+                width: 300px; height: 300px;
                 background: rgba(255, 255, 255, 0.1);
                 border-radius: 50%;
                 transform: translate(30%, -30%);
@@ -440,7 +500,7 @@
                 backdrop-filter: blur(10px);
             }
 
-            /* Job Body */
+            /* ── Job Body ── */
             .job-body {
                 padding: 2.5rem;
             }
@@ -474,13 +534,19 @@
                 margin: 2rem 0;
             }
 
-            /* Template Download */
+            /* ── Template Download ── */
             .template-download-section {
                 background: linear-gradient(135deg, #F0FFFE 0%, #FFFFFF 100%);
                 padding: 1.5rem;
                 border-radius: 12px;
                 border: 2px solid rgba(78, 205, 196, 0.3);
                 margin-bottom: 2rem;
+            }
+
+            .template-list {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 0.75rem;
             }
 
             .btn-download-template {
@@ -504,7 +570,7 @@
                 color: white;
             }
 
-            /* Application Form */
+            /* ── Application Form ── */
             .application-section {
                 background: var(--background-light);
                 padding: 2rem;
@@ -522,6 +588,10 @@
                 gap: 0.5rem;
             }
 
+            .application-title i {
+                color: var(--primary-color);
+            }
+
             .form-label-custom {
                 font-weight: 600;
                 color: var(--text-dark);
@@ -536,53 +606,6 @@
                 color: var(--primary-color);
             }
 
-            .form-control-custom {
-                padding: 0.75rem 1rem;
-                border: 2px solid var(--border-color);
-                border-radius: 10px;
-                background-color: white;
-                color: var(--text-dark);
-                font-size: 0.95rem;
-                transition: all 0.3s ease;
-                font-family: 'Outfit', sans-serif;
-            }
-
-            .form-control-custom:focus {
-                outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 4px rgba(255, 107, 53, 0.1);
-            }
-
-            .file-upload-wrapper {
-                position: relative;
-                margin-bottom: 1.5rem;
-            }
-
-            .file-upload-label {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 1.5rem;
-                border: 2px dashed var(--border-color);
-                border-radius: 12px;
-                background: white;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                color: var(--text-muted);
-                font-weight: 500;
-            }
-
-            .file-upload-label:hover {
-                border-color: var(--primary-color);
-                background: linear-gradient(135deg, #FFF5F2 0%, #FFE8E0 100%);
-                color: var(--primary-color);
-            }
-
-            .file-upload-label i {
-                font-size: 1.5rem;
-                margin-right: 0.5rem;
-            }
-
             .form-hint {
                 display: block;
                 color: var(--text-muted);
@@ -590,112 +613,7 @@
                 margin-top: 0.5rem;
             }
 
-            /* Buttons */
-            .btn-apply-submit {
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-                color: white;
-                padding: 1rem 2rem;
-                border-radius: 12px;
-                font-weight: 700;
-                font-size: 1.1rem;
-                border: none;
-                transition: all 0.3s ease;
-                width: 100%;
-                box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
-            }
-
-            .btn-apply-submit:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
-            }
-
-            .btn-applied-disabled {
-                background: linear-gradient(135deg, #95E1D3, #7DD8C8);
-                color: #0F6848;
-                padding: 1rem 2rem;
-                border-radius: 12px;
-                font-weight: 700;
-                font-size: 1.1rem;
-                border: none;
-                width: 100%;
-                cursor: not-allowed;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-            }
-
-            .btn-login-apply {
-                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-                color: white;
-                padding: 1rem 2rem;
-                border-radius: 12px;
-                font-weight: 700;
-                font-size: 1.1rem;
-                border: none;
-                transition: all 0.3s ease;
-                width: 100%;
-                text-decoration: none;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
-                box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
-            }
-
-            .btn-login-apply:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
-                color: white;
-            }
-
-            /* Responsive */
-            @media (max-width: 768px) {
-                .job-title-main {
-                    font-size: 1.75rem;
-                }
-
-                .job-header {
-                    padding: 2rem;
-                }
-
-                .job-body {
-                    padding: 1.5rem;
-                }
-
-                .job-meta-header {
-                    flex-direction: column;
-                    gap: 0.75rem;
-                }
-
-                .brand-text {
-                    font-size: 1.25rem;
-                }
-            }
-
-            /* Animation */
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(20px);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            .job-details-card {
-                animation: fadeIn 0.5s ease-out;
-            }
-
-            .btn-back {
-                animation: fadeIn 0.4s ease-out;
-            }
-
-
-            /* Resume Info Box */
+            /* ── Resume Info Box ── */
             .resume-info-box {
                 background: linear-gradient(135deg, #E8F8F5 0%, #D5F4E6 100%);
                 border: 2px solid rgba(15, 104, 72, 0.2);
@@ -722,6 +640,349 @@
                 background: var(--primary-color);
                 color: white;
             }
+
+            /* ── Template Upload Form Section ── */
+            .template-upload-section-form {
+                background: linear-gradient(135deg, #FFFAF8 0%, #FFF5F2 100%);
+                border: 2px solid rgba(255, 107, 53, 0.25);
+                border-radius: 14px;
+                padding: 1.5rem;
+            }
+
+            .template-upload-header {
+                display: flex;
+                align-items: center;
+                gap: 0.6rem;
+                font-size: 1.05rem;
+                font-weight: 700;
+                color: var(--text-dark);
+                margin-bottom: 0.5rem;
+            }
+
+            .template-upload-header i {
+                color: var(--primary-color);
+                font-size: 1.2rem;
+            }
+
+            .template-upload-subtext {
+                font-size: 0.88rem;
+                color: var(--text-muted);
+                margin-bottom: 1.25rem;
+                line-height: 1.5;
+            }
+
+            .template-upload-list {
+                display: flex;
+                flex-direction: column;
+                gap: 1.25rem;
+            }
+
+            .template-upload-item {
+                background: white;
+                border: 2px solid var(--border-color);
+                border-radius: 12px;
+                padding: 1.25rem;
+                transition: border-color 0.3s ease;
+            }
+
+            .template-upload-item-label {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.85rem;
+                margin-bottom: 1rem;
+            }
+
+            .template-number {
+                width: 28px;
+                height: 28px;
+                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+                color: white;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.8rem;
+                font-weight: 700;
+                flex-shrink: 0;
+                margin-top: 2px;
+            }
+
+            .template-name {
+                font-weight: 700;
+                color: var(--text-dark);
+                font-size: 0.95rem;
+                margin: 0 0 0.2rem;
+            }
+
+            .template-name-hint {
+                font-size: 0.82rem;
+                color: var(--text-muted);
+                margin: 0;
+            }
+
+            .required-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.25rem;
+                font-size: 0.78rem;
+                font-weight: 700;
+                color: #C92A2A;
+                margin-top: 0.6rem;
+            }
+
+            .required-badge i {
+                font-size: 0.6rem;
+            }
+
+            .optional-tag {
+                background: var(--border-color);
+                color: var(--text-muted);
+                font-size: 0.72rem;
+                font-weight: 600;
+                padding: 0.15rem 0.5rem;
+                border-radius: 6px;
+                margin-left: 0.35rem;
+                vertical-align: middle;
+            }
+
+            /* ── Drag & Drop Zone ── */
+            .file-drop-zone {
+                border: 2px dashed var(--border-color);
+                border-radius: 12px;
+                padding: 1.5rem 1rem;
+                background: white;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-align: center;
+                position: relative;
+            }
+
+            .file-drop-zone:hover,
+            .file-drop-zone.drag-over {
+                border-color: var(--primary-color);
+                background: linear-gradient(135deg, #FFF5F2 0%, #FFE8E0 100%);
+            }
+
+            .file-drop-zone.file-attached {
+                border-color: #10B981;
+                border-style: solid;
+                background: linear-gradient(135deg, #E8F8F5 0%, #D5F4E6 100%);
+            }
+
+            .file-input-hidden {
+                position: absolute;
+                width: 0;
+                height: 0;
+                opacity: 0;
+                pointer-events: none;
+            }
+
+            .drop-zone-content {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 0.35rem;
+                pointer-events: none;
+            }
+
+            .drop-zone-icon {
+                font-size: 2rem;
+                color: var(--text-muted);
+                transition: color 0.3s;
+            }
+
+            .file-drop-zone:hover .drop-zone-icon,
+            .file-drop-zone.drag-over .drop-zone-icon {
+                color: var(--primary-color);
+            }
+
+            .drop-zone-text {
+                font-weight: 600;
+                font-size: 0.92rem;
+                color: var(--text-dark);
+            }
+
+            .drop-zone-hint {
+                font-size: 0.8rem;
+                color: var(--text-muted);
+            }
+
+            /* ── File Selected State ── */
+            .file-selected-preview {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.6rem;
+                padding: 0.25rem 0;
+            }
+
+            .file-selected-icon {
+                font-size: 1.5rem;
+                color: #10B981;
+                flex-shrink: 0;
+            }
+
+            .file-selected-name {
+                font-weight: 600;
+                font-size: 0.9rem;
+                color: #0F6848;
+                word-break: break-all;
+            }
+
+            .file-clear-btn {
+                background: rgba(201, 42, 42, 0.1);
+                border: none;
+                color: #C92A2A;
+                border-radius: 6px;
+                width: 28px;
+                height: 28px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                flex-shrink: 0;
+                transition: all 0.2s ease;
+                font-size: 0.75rem;
+            }
+
+            .file-clear-btn:hover {
+                background: #C92A2A;
+                color: white;
+            }
+
+            /* ── Submit Buttons ── */
+            .btn-apply-submit {
+                background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+                color: white;
+                padding: 1rem 2rem;
+                border-radius: 12px;
+                font-weight: 700;
+                font-size: 1.1rem;
+                border: none;
+                transition: all 0.3s ease;
+                width: 100%;
+                box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
+                cursor: pointer;
+            }
+
+            .btn-apply-submit:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
+            }
+
+            .btn-applied-disabled {
+                background: linear-gradient(135deg, #95E1D3, #7DD8C8);
+                color: #0F6848;
+                padding: 1rem 2rem;
+                border-radius: 12px;
+                font-weight: 700;
+                font-size: 1.1rem;
+                border: none;
+                width: 100%;
+                cursor: not-allowed;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 0.5rem;
+            }
+
+            /* ── Responsive ── */
+            @media (max-width: 768px) {
+                .job-title-main {
+                    font-size: 1.75rem;
+                }
+
+                .job-header {
+                    padding: 2rem;
+                }
+
+                .job-body {
+                    padding: 1.5rem;
+                }
+
+                .job-meta-header {
+                    flex-direction: column;
+                    gap: 0.75rem;
+                }
+
+                .application-section {
+                    padding: 1.25rem;
+                }
+
+                .template-upload-section-form {
+                    padding: 1.25rem;
+                }
+            }
         </style>
+
+        <script>
+            /**
+             * Called when a file is selected via the hidden input.
+             * Swaps the drop-zone content to show the chosen filename.
+             */
+            function handleFileSelect(input, dropZoneId, fileNameId) {
+                const dropZone   = document.getElementById(dropZoneId);
+                const fileNameEl = document.getElementById(fileNameId);
+
+                if (input.files && input.files[0]) {
+                    const file = input.files[0];
+
+                    // Hide the placeholder, show the file preview
+                    dropZone.querySelector('.drop-zone-content').classList.add('d-none');
+                    fileNameEl.classList.remove('d-none');
+                    fileNameEl.querySelector('.file-selected-name').textContent = file.name;
+
+                    // Apply green "attached" styling
+                    dropZone.classList.add('file-attached');
+                }
+            }
+
+            /**
+             * Clears a file input and resets the drop-zone to its default state.
+             */
+            function clearFile(event, inputId, dropZoneId, fileNameId) {
+                event.stopPropagation(); // prevent re-opening the file picker
+
+                const input      = document.getElementById(inputId);
+                const dropZone   = document.getElementById(dropZoneId);
+                const fileNameEl = document.getElementById(fileNameId);
+
+                input.value = '';
+                fileNameEl.classList.add('d-none');
+                dropZone.querySelector('.drop-zone-content').classList.remove('d-none');
+                dropZone.classList.remove('file-attached');
+            }
+
+            /**
+             * Enable drag-and-drop on every drop zone.
+             */
+            document.addEventListener('DOMContentLoaded', function () {
+                document.querySelectorAll('.file-drop-zone').forEach(function (zone) {
+                    zone.addEventListener('dragover', function (e) {
+                        e.preventDefault();
+                        zone.classList.add('drag-over');
+                    });
+
+                    zone.addEventListener('dragleave', function () {
+                        zone.classList.remove('drag-over');
+                    });
+
+                    zone.addEventListener('drop', function (e) {
+                        e.preventDefault();
+                        zone.classList.remove('drag-over');
+
+                        const input = zone.querySelector('input[type="file"]');
+                        if (input && e.dataTransfer.files.length) {
+                            // Assign dropped files to the hidden input
+                            const dataTransfer = new DataTransfer();
+                            dataTransfer.items.add(e.dataTransfer.files[0]);
+                            input.files = dataTransfer.files;
+                            input.dispatchEvent(new Event('change'));
+                        }
+                    });
+                });
+            });
+        </script>
+
     @endsection
 @endcan

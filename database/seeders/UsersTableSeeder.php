@@ -28,7 +28,7 @@ class UsersTableSeeder extends Seeder
         // ===== CREATE ADMIN USERS =====
         $admin = User::create([
             'name' => 'Admin User',
-            'email' => 'admin@mail.com',
+            'email' => 'admin@gmail.com',
             'password' => Hash::make('admin')
         ]);
 
@@ -46,7 +46,7 @@ class UsersTableSeeder extends Seeder
         foreach(range(1,5) as $i) {
             $employer = User::create([
                 'name' => 'Employer'.$i,
-                'email' => 'employer'.$i.'@mail.com',
+                'email' => 'employer'.$i.'@gmail.com',
                 'password' => Hash::make('employer')
             ]);
             $employer->roles()->attach($employerRole);
@@ -56,7 +56,7 @@ class UsersTableSeeder extends Seeder
         // First default user
         $user = User::create([
             'name' => 'User',
-            'email' => 'user@mail.com',
+            'email' => 'user@gmail.com',
             'password' => Hash::make('user')
         ]);
         $user->roles()->attach($userRole);
@@ -65,7 +65,7 @@ class UsersTableSeeder extends Seeder
         foreach(range(1,20) as $i) {
             $u = User::create([
                 'name' => 'User'.$i,
-                'email' => 'user'.$i.'@mail.com',
+                'email' => 'user'.$i.'@gmail.com',
                 'password' => Hash::make('user')
             ]);
             $u->roles()->attach($userRole);

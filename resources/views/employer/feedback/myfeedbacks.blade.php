@@ -1,6 +1,6 @@
-@can('user-access')
+@can('employer-access')
 
-    @extends('layouts.Users.app')
+    @extends('layouts.Employer.app')
     @section('content')
 
     <div class="py-12">

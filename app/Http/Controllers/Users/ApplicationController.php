@@ -50,12 +50,17 @@ class ApplicationController extends Controller
         // Handle Application Letter Upload (if provided)
         if ($request->hasFile('application_letter')) {
             $letterFile = $request->file('application_letter');
-            $letterPath = $letterFile->store('applications/letters', 'public');
+            
+            // Get EXACT original filename
+            $originalName = $letterFile->getClientOriginalName();
+            
+            // Store the file with EXACT original filename
+            $letterPath = $letterFile->storeAs('applications/letters', $originalName, 'public');
 
             $application->files()->create([
                 'file_path' => $letterPath,
                 'file_type' => 'application_letter',
-                'original_name' => $letterFile->getClientOriginalName(),
+                'original_name' => $originalName,
                 'mime_type' => $letterFile->getMimeType(),
                 'file_size' => $letterFile->getSize(),
             ]);
@@ -92,7 +97,7 @@ class ApplicationController extends Controller
             ],
             'action_url' => route('employer.jobs.applicants', [
                 'job' => $job->id,
-                'highlight' => $application->id, // 👈 THIS IS THE KEY
+                'highlight' => $application->id,
             ]),
             'icon' => 'bi-person-plus-fill',
             'color' => 'primary',

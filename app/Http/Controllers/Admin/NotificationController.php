@@ -24,7 +24,7 @@ class NotificationController extends Controller
         // Get unread count
         $unreadCount = $user->unreadNotificationsCount();
         
-        return view('Employer.notifications.index', compact('notifications', 'unreadCount'));
+        return view('Admin.notifications.index', compact('notifications', 'unreadCount'));
     }
 
     /**

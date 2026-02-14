@@ -105,8 +105,11 @@ class UserController extends Controller
     public function viewUser(User $user)
     {
         // Load user with relationships
-        $user->load(['roles', 'jobSeeker.applications.job', 'employer.jobs']);
-
+        $user->load([
+            'roles',
+            'jobSeeker.applications.job',
+            'employer.jobs.applications' // load applications under each job for employers
+        ]);
         return view('admin.users.view', compact('user'));
     }
 }

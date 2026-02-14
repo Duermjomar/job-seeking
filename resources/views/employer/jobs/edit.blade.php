@@ -178,9 +178,9 @@
                                                     </div>
                                                     <div class="file-actions">
                                                         <a href="{{ route('employer.templates.view', $template->id) }}"
-                                                            target="_blank" class="btn-file-action btn-view"
+                                                            class="btn-file-action btn-view"
                                                             title="Download file">
-                                                            <i class="bi bi-arrow-down"></i>
+                                                            <i class="bi bi-download"></i>
                                                         </a>
                                                         <button type="button" class="btn-file-action btn-delete"
                                                             onclick="deleteTemplate({{ $template->id }})"
@@ -243,6 +243,9 @@
         </div>
     </div>
 
+    {{-- Add CSRF token meta tag for AJAX --}}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
@@ -298,19 +301,24 @@
         }
 
 
-
         .btn-back {
-            border: 2px solid var(--primary-color);
-            color: var(--primary-color);
-            padding: 0.4rem 1rem;
-            border-radius: 8px;
+            background: white;
+            color: var(--text-dark);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 0.5rem 1.25rem;
             font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
             transition: all 0.3s ease;
         }
 
         .btn-back:hover {
             background: var(--primary-color);
             color: white;
+            border-color: var(--primary-color);
+            transform: translateX(-4px);
         }
 
         /* Alerts */
@@ -501,6 +509,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 1rem;
+            text-decoration: none;
         }
 
         .btn-view {
@@ -785,39 +794,61 @@
                 return;
             }
 
+            const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
             fetch(`/employer/templates/${templateId}`, {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-CSRF-TOKEN': csrfToken,
                         'Accept': 'application/json',
+                        'Content-Type': 'application/json'
                     }
                 })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        document.getElementById(`template-${templateId}`).remove();
+                        // Remove the template element from the DOM
+                        const templateElement = document.getElementById(`template-${templateId}`);
+                        if (templateElement) {
+                            templateElement.style.transition = 'all 0.3s ease';
+                            templateElement.style.opacity = '0';
+                            templateElement.style.transform = 'translateX(-20px)';
+                            
+                            setTimeout(() => {
+                                templateElement.remove();
 
-                        // Check if no templates left
-                        const remainingTemplates = document.querySelectorAll('.existing-file-item');
-                        if (remainingTemplates.length === 0) {
-                            document.querySelector('.existing-templates-section').remove();
+                                // Check if no templates left
+                                const remainingTemplates = document.querySelectorAll('.existing-file-item');
+                                if (remainingTemplates.length === 0) {
+                                    const templatesSection = document.querySelector('.existing-templates-section');
+                                    if (templatesSection) {
+                                        templatesSection.remove();
+                                    }
+                                }
+                            }, 300);
                         }
 
-                        alert('Template deleted successfully!');
+                        // Show success message
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-custom alert-success mb-4';
+                        alertDiv.innerHTML = '<i class="bi bi-check-circle-fill me-2"></i>' + data.message;
+                        
+                        const formCard = document.querySelector('.form-card');
+                        formCard.parentNode.insertBefore(alertDiv, formCard);
+                        
+                        // Auto-remove alert after 3 seconds
+                        setTimeout(() => {
+                            alertDiv.remove();
+                        }, 3000);
                     } else {
-                        alert('Error deleting template. Please try again.');
+                        alert('Error: ' + data.message);
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error deleting template. Please try again.');
+                    alert('An error occurred while deleting the template. Please try again.');
                 });
         }
     </script>
-
-    {{-- Add CSRF token meta tag for AJAX --}}
-    @if (!isset($__env->getShared()['__data']['csrf_token']))
-        <meta name="csrf-token" content="{{ csrf_token() }}">
-    @endif
 
 @endsection

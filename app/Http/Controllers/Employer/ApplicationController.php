@@ -11,60 +11,6 @@ use App\Http\Controllers\Controller;
 
 class ApplicationController extends Controller
 {
-    public function store(Request $request, Job $job)
-    {
-        $user = Auth::user();
-        $jobSeeker = $user->jobSeeker;
-
-        if (!$jobSeeker) {
-            return back()->with('error', 'Job seeker profile not found.');
-        }
-
-        // Check if profile has resume
-        if (!$jobSeeker->resume) {
-            return back()->with('error', 'Please upload your resume in your profile before applying.');
-        }
-
-        // Prevent duplicate application
-        $alreadyApplied = Application::where('job_id', $job->id)
-            ->where('job_seeker_id', $jobSeeker->id)
-            ->exists();
-
-        if ($alreadyApplied) {
-            return back()->with('error', 'You already applied for this job.');
-        }
-
-        // Validate only application letter (optional)
-        $request->validate([
-            'application_letter' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048',
-        ]);
-
-        // Create application
-        $application = Application::create([
-            'job_id' => $job->id,
-            'job_seeker_id' => $jobSeeker->id,
-            'application_status' => 'pending',
-            'applied_at' => now(),
-        ]);
-
-        // Handle Application Letter Upload (if provided)
-        if ($request->hasFile('application_letter')) {
-            $letterFile = $request->file('application_letter');
-            $letterPath = $letterFile->store('applications/letters', 'public');
-
-            $application->files()->create([
-                'file_path' => $letterPath,
-                'file_type' => 'application_letter',
-                'original_name' => $letterFile->getClientOriginalName(),
-                'mime_type' => $letterFile->getMimeType(),
-                'file_size' => $letterFile->getSize(),
-            ]);
-        }
-
-        return back()->with('success', 'Application submitted successfully!');
-    }
-
-
 
     public function updateStatus(Request $request, Application $application)
     {
