@@ -67,7 +67,7 @@ class ApplicationController extends Controller
         ];
 
         $message = $messages[$validated['status']];
-        
+
         if ($validated['status'] === 'rejected' && !empty($validated['rejection_reason'])) {
             $message .= " Reason: {$validated['rejection_reason']}";
         }
@@ -103,4 +103,46 @@ class ApplicationController extends Controller
 
         return back()->with('success', $successMessages[$validated['status']]);
     }
+
+
+    public function allByStatus(Request $request, Job $job = null)
+    {
+        $validStatuses = [
+            'pending',
+            'reviewed',
+            'shortlisted',
+            'interview_scheduled',
+            'interviewed',
+            'accepted',
+            'rejected',
+        ];
+
+        $status = $request->get('status');
+        $jobIds = Auth::user()->jobs()->pluck('id');
+
+        $query = Application::whereIn('job_id', $jobIds)
+            ->with(['jobSeeker.user', 'files', 'interview', 'job']);
+
+        if ($job) {
+            $query->where('job_id', $job->id);
+        }
+
+        if ($status && in_array($status, $validStatuses)) {
+            $query->where('application_status', $status);
+        }
+
+        $applications = $query->latest()->get();
+
+        $statusCounts = Application::whereIn('job_id', $jobIds)
+            ->selectRaw('application_status, COUNT(*) as total')
+            ->groupBy('application_status')
+            ->pluck('total', 'application_status');
+
+        return view('Employer.jobs.applicants', compact(
+            'applications',
+            'statusCounts',
+            'status',
+            'job'
+        ));
+    }   
 }

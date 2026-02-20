@@ -8,7 +8,6 @@
 
             {{-- Left Side - Logo Only --}}
             <div class="navbar-left">
-                {{-- Logo --}}
                 <div class="navbar-brand-custom">
                     <a href="{{ route('dashboard') }}" class="brand-link">
                         <div class="brand-icon">
@@ -35,7 +34,6 @@
                     <div class="dropdown-menu dropdown-menu-end notification-dropdown-menu"
                         aria-labelledby="notificationBell">
 
-                        {{-- Header --}}
                         <div class="notification-dropdown-header">
                             <h6 class="mb-0">Notifications</h6>
                             @if (auth()->user()->unreadNotificationsCount() > 0)
@@ -47,7 +45,6 @@
                             @endif
                         </div>
 
-                        {{-- Body --}}
                         <div class="notification-dropdown-body">
                             @forelse(auth()->user()->notifications()->take(5)->get() as $notification)
                                 <a href="{{ route('employer.notifications.mark-read', $notification->id) }}"
@@ -76,7 +73,6 @@
                             @endforelse
                         </div>
 
-                        {{-- Footer --}}
                         <div class="notification-dropdown-footer">
                             <a href="{{ route('employer.notifications.index') }}" class="btn-view-all">
                                 View All Notifications <i class="bi bi-arrow-right"></i>
@@ -85,10 +81,11 @@
                     </div>
                 </div>
 
-                {{-- Desktop User Dropdown with Navigation Links --}}
+                {{-- Desktop User Dropdown --}}
+                {{-- data-bs-auto-close="outside" keeps dropdown open when clicking inside --}}
                 <div class="dropdown user-dropdown">
                     <button class="user-dropdown-btn dropdown-toggle" type="button" id="userDropdown"
-                        data-bs-toggle="dropdown" aria-expanded="false">
+                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
                         <div class="user-avatar">
                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                         </div>
@@ -97,7 +94,8 @@
                     </button>
 
                     <ul class="dropdown-menu dropdown-menu-custom dropdown-menu-end" aria-labelledby="userDropdown">
-                        {{-- User Info Section --}}
+
+                        {{-- User Info --}}
                         <li>
                             <div class="dropdown-user-info">
                                 <div class="dropdown-user-avatar">
@@ -115,14 +113,15 @@
                             <hr class="dropdown-divider-custom">
                         </li>
 
-                        {{-- Navigation Links --}}
+                        {{-- Dashboard --}}
                         <li>
                             <a class="dropdown-item-custom {{ request()->routeIs('dashboard') ? 'active' : '' }}"
                                 href="{{ route('dashboard') }}">
                                 <i class="bi bi-house-door me-2"></i>Dashboard
                             </a>
                         </li>
-                        <li>
+
+                        {{-- <li>
                             <a class="dropdown-item-custom {{ request()->routeIs('employer.feedback.create') ? 'active' : '' }}"
                                 href="{{ route('employer.feedback.create') }}">
                                 <i class="bi bi-chat-dots me-2"></i>Send Feedback
@@ -133,12 +132,82 @@
                                 href="{{ route('employer.myfeedback') }}">
                                 <i class="bi bi-envelope-check me-2"></i>My Feedbacks
                             </a>
-                        </li>
+                        </li> --}}
+
                         <li>
                             <hr class="dropdown-divider-custom">
                         </li>
 
-                        {{-- Profile & Logout --}}
+                        {{-- ── Applicants by Status (Collapsible) ── --}}
+                        @php
+                            use App\Models\Application;
+
+                            $employerJobIds = Auth::user()->jobs()->pluck('id');
+
+                            $statusCounts = Application::whereIn('job_id', $employerJobIds)
+                                ->selectRaw('application_status, COUNT(*) as total')
+                                ->groupBy('application_status')
+                                ->pluck('total', 'application_status');
+
+                            $totalApplicants = $statusCounts->sum();
+
+                            $statuses = [
+                                'pending' => ['label' => 'Pending', 'icon' => 'bi-clock', 'badge' => 'b-pending'],
+                                'reviewed' => ['label' => 'Reviewed', 'icon' => 'bi-eye', 'badge' => 'b-reviewed'],
+                                'shortlisted' => [
+                                    'label' => 'Shortlisted',
+                                    'icon' => 'bi-star',
+                                    'badge' => 'b-shortlisted',
+                                ],
+                                'interview_scheduled' => [
+                                    'label' => 'Interview',
+                                    'icon' => 'bi-calendar-check',
+                                    'badge' => 'b-interview',
+                                ],
+                                'interviewed' => [
+                                    'label' => 'Interviewed',
+                                    'icon' => 'bi-chat-dots',
+                                    'badge' => 'b-interviewed',
+                                ],
+                                'accepted' => [
+                                    'label' => 'Accepted',
+                                    'icon' => 'bi-check-circle',
+                                    'badge' => 'b-accepted',
+                                ],
+                                'rejected' => ['label' => 'Rejected', 'icon' => 'bi-x-circle', 'badge' => 'b-rejected'],
+                            ];
+                        @endphp
+
+                        {{-- Collapsible trigger row --}}
+                        <li>
+                            <button type="button" class="dropdown-item-custom collapsible-trigger"
+                                onclick="toggleStatusPanel(event)">
+                                <i class="bi bi-people-fill me-2" style="color: var(--primary-color);"></i>
+                                <span class="flex-grow-1 text-start">Applicants by Status</span>
+                                <span class="total-badge">{{ $totalApplicants }}</span>
+                                <i class="bi bi-chevron-down trigger-arrow" id="statusArrow"></i>
+                            </button>
+                        </li>
+
+                        {{-- Collapsible panel --}}
+                        <li class="status-panel-li" id="statusPanel">
+                            <div class="status-panel-inner">
+                                @foreach ($statuses as $key => $meta)
+                                    <a class="status-row"
+                                        href="{{ route('employer.applicants.byStatus', ['status' => $key]) }}">
+                                        <i class="bi {{ $meta['icon'] }} status-row-icon"></i>
+                                        <span class="status-row-label">{{ $meta['label'] }}</span>
+                                   
+                                    </a>
+                                @endforeach
+                            </div>
+                        </li>
+
+                        <li>
+                            <hr class="dropdown-divider-custom">
+                        </li>
+
+                        {{-- Account & Logout --}}
                         <li>
                             <a class="dropdown-item-custom" href="{{ route('account.settings') }}">
                                 <i class="bi bi-gear-fill me-2"></i>Account Settings
@@ -172,7 +241,6 @@
 <div class="offcanvas offcanvas-end mobile-menu-offcanvas" tabindex="-1" id="mobileMenu"
     aria-labelledby="mobileMenuLabel">
 
-    {{-- Header --}}
     <div class="offcanvas-header">
         <h5 class="offcanvas-title" id="mobileMenuLabel">
             <i class="bi bi-briefcase-fill me-2"></i>JobFinder
@@ -182,10 +250,8 @@
         </button>
     </div>
 
-    {{-- Body --}}
     <div class="offcanvas-body">
 
-        {{-- User Info --}}
         <div class="mobile-user-info">
             <div class="mobile-user-avatar">
                 {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
@@ -199,14 +265,14 @@
             </div>
         </div>
 
-        {{-- Navigation Links --}}
         <div class="mobile-nav-links">
             <a href="{{ route('dashboard') }}"
                 class="mobile-nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                 <i class="bi bi-house-door"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="{{ route('employer.feedback.create') }}"
+
+            {{-- <a href="{{ route('employer.feedback.create') }}"
                 class="mobile-nav-link {{ request()->routeIs('employer.feedback.create') ? 'active' : '' }}">
                 <i class="bi bi-chat-dots"></i>
                 <span>Send Feedback</span>
@@ -215,12 +281,31 @@
                 class="mobile-nav-link {{ request()->routeIs('employer.myfeedback') ? 'active' : '' }}">
                 <i class="bi bi-envelope-check"></i>
                 <span>My Feedbacks</span>
-            </a>
+            </a> --}}
+
+            {{-- Mobile: Collapsible Applicants by Status --}}
+            <button type="button" class="mobile-nav-link mobile-collapsible-btn"
+                onclick="toggleMobileStatusPanel()">
+                <i class="bi bi-people-fill"></i>
+                <span class="flex-grow-1 text-start">Applicants by Status</span>
+                <span class="total-badge-mobile">{{ $totalApplicants }}</span>
+                <i class="bi bi-chevron-down" id="mobileStatusArrow"
+                    style="font-size:0.8rem; transition: transform 0.25s ease;"></i>
+            </button>
+
+            <div class="mobile-status-panel" id="mobileStatusPanel">
+                @foreach ($statuses as $key => $meta)
+                    <a class="mobile-status-row"
+                        href="{{ route('employer.applicants.byStatus', ['status' => $key]) }}">
+                        <i class="bi {{ $meta['icon'] }} mobile-status-row-icon"></i>
+                        <span class="mobile-status-row-label">{{ $meta['label'] }}</span>
+                     
+                    </a>
+                @endforeach
+            </div>
         </div>
 
-        {{-- Actions --}}
         <div class="mobile-actions">
-    
             <a href="{{ route('account.settings') }}" class="mobile-action-btn">
                 <i class="bi bi-gear-fill me-2"></i>Account Settings
             </a>
@@ -235,20 +320,13 @@
     </div>
 </div>
 
-{{-- ============================================
-     STYLES - BOOTSTRAP ONLY
-     ============================================ --}}
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap');
 
-    /* ============================================
-       CSS VARIABLES
-       ============================================ */
     :root {
         --primary-color: #FF6B35;
         --primary-dark: #E85A2A;
         --secondary-color: #4ECDC4;
-        --accent-color: #FFE66D;
         --text-dark: #2D3748;
         --text-muted: #718096;
         --border-color: #E2E8F0;
@@ -262,9 +340,7 @@
         font-family: 'Outfit', sans-serif;
     }
 
-    /* ============================================
-       MAIN NAVBAR
-       ============================================ */
+    /* ─── Navbar ─────────────────────────────────── */
     .navbar-custom {
         background: linear-gradient(135deg, var(--white) 0%, #FAFBFC 100%);
         border-bottom: 2px solid var(--border-color);
@@ -281,9 +357,6 @@
         align-items: center;
     }
 
-    /* ============================================
-       LEFT SIDE - BRAND
-       ============================================ */
     .navbar-left {
         display: flex;
         align-items: center;
@@ -329,18 +402,13 @@
         background-clip: text;
     }
 
-    /* ============================================
-       RIGHT SIDE - USER & ACTIONS
-       ============================================ */
     .navbar-right {
         display: flex;
         align-items: center;
         gap: 1rem;
     }
 
-    /* ============================================
-       NOTIFICATION BELL & DROPDOWN
-       ============================================ */
+    /* ─── Bell ───────────────────────────────────── */
     .notification-bell {
         position: relative;
         background: transparent;
@@ -384,6 +452,7 @@
         }
     }
 
+    /* ─── Notification dropdown ──────────────────── */
     .notification-dropdown-menu {
         width: 380px;
         max-height: 500px;
@@ -575,9 +644,7 @@
         color: var(--primary-dark);
     }
 
-    /* ============================================
-       USER DROPDOWN (DESKTOP)
-       ============================================ */
+    /* ─── User Dropdown ──────────────────────────── */
     .user-dropdown {
         display: none;
     }
@@ -630,11 +697,10 @@
         border-radius: 12px;
         box-shadow: var(--shadow-md);
         padding: 0.5rem;
-        min-width: 260px;
+        min-width: 280px;
         margin-top: 0.5rem;
     }
 
-    /* User Info in Dropdown */
     .dropdown-user-info {
         display: flex;
         align-items: center;
@@ -696,6 +762,7 @@
         width: 100%;
         text-align: left;
         cursor: pointer;
+        font-size: 0.9rem;
     }
 
     .dropdown-item-custom:hover {
@@ -719,13 +786,151 @@
     }
 
     .dropdown-divider-custom {
-        margin: 0.5rem 0;
+        margin: 0.4rem 0;
         border-top: 1px solid var(--border-color);
     }
 
-    /* ============================================
-       MOBILE TOGGLE BUTTON
-       ============================================ */
+    /* ─── Collapsible trigger ────────────────────── */
+    .collapsible-trigger {
+        gap: 0;
+    }
+
+    .collapsible-trigger:hover {
+        background: linear-gradient(135deg, #FFF5F2, #FFE8E0);
+        color: var(--primary-color);
+    }
+
+    .total-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 0.35rem;
+        border-radius: 20px;
+        margin-left: auto;
+        margin-right: 0.4rem;
+        flex-shrink: 0;
+    }
+
+    .trigger-arrow {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        flex-shrink: 0;
+        transition: transform 0.25s ease;
+    }
+
+    .trigger-arrow.open {
+        transform: rotate(180deg);
+    }
+
+    /* ─── Collapsible panel ──────────────────────── */
+    .status-panel-li {
+        list-style: none;
+        overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.3s ease;
+        padding: 0;
+        margin: 0;
+    }
+
+    .status-panel-li.open {
+        max-height: 500px;
+    }
+
+    .status-panel-inner {
+        background: var(--background-light);
+        border: 1.5px solid var(--border-color);
+        border-radius: 8px;
+        margin: 0.15rem 0.5rem 0.4rem;
+        padding: 0.3rem;
+    }
+
+    /* each status row inside panel */
+    .status-row {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.48rem 0.75rem;
+        border-radius: 7px;
+        text-decoration: none;
+        color: var(--text-dark);
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.18s ease;
+    }
+
+    .status-row:hover {
+        background: white;
+        color: var(--primary-color);
+        box-shadow: 0 2px 6px rgba(255, 107, 53, 0.1);
+    }
+
+    .status-row:hover .status-row-icon {
+        color: var(--primary-color);
+    }
+
+    .status-row-icon {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        width: 16px;
+        flex-shrink: 0;
+        transition: color 0.18s;
+    }
+
+    .status-row-label {
+        flex: 1;
+    }
+
+
+
+    .b-pending {
+        background: #FFF4E6;
+        color: #D97706;
+        border: 1px solid #FDE68A;
+    }
+
+    .b-reviewed {
+        background: #E0E7FF;
+        color: #4338CA;
+        border: 1px solid #C7D2FE;
+    }
+
+    .b-shortlisted {
+        background: #FEF3C7;
+        color: #92400E;
+        border: 1px solid #FDE68A;
+    }
+
+    .b-interview {
+        background: #DBEAFE;
+        color: #1E40AF;
+        border: 1px solid #BFDBFE;
+    }
+
+    .b-interviewed {
+        background: #E9D5FF;
+        color: #6B21A8;
+        border: 1px solid #D8B4FE;
+    }
+
+    .b-accepted {
+        background: #D5F4E6;
+        color: #0F6848;
+        border: 1px solid #6EE7B7;
+    }
+
+    .b-rejected {
+        background: #FFE5E5;
+        color: #C92A2A;
+        border: 1px solid #FCA5A5;
+    }
+
+    /* ─── Mobile toggle btn ──────────────────────── */
     .mobile-toggle {
         display: flex;
         flex-direction: column;
@@ -755,9 +960,7 @@
         }
     }
 
-    /* ============================================
-       MOBILE MENU OFFCANVAS
-       ============================================ */
+    /* ─── Offcanvas ──────────────────────────────── */
     .mobile-menu-offcanvas {
         width: 320px !important;
     }
@@ -814,10 +1017,6 @@
         flex-shrink: 0;
     }
 
-    .mobile-user-details {
-        flex: 1;
-    }
-
     .mobile-user-name {
         font-weight: 700;
         color: var(--text-dark);
@@ -847,7 +1046,7 @@
         display: flex;
         flex-direction: column;
         gap: 0.5rem;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
     }
 
     .mobile-nav-link {
@@ -878,6 +1077,81 @@
         color: white;
         font-weight: 600;
         box-shadow: 0 4px 12px rgba(255, 107, 53, 0.3);
+    }
+
+    /* Mobile collapsible trigger */
+    .mobile-collapsible-btn {
+        border: none;
+        background: none;
+        width: 100%;
+        cursor: pointer;
+        font-size: 1rem;
+    }
+
+    .total-badge-mobile {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        color: white;
+        font-size: 0.7rem;
+        font-weight: 700;
+        min-width: 20px;
+        height: 20px;
+        padding: 0 0.35rem;
+        border-radius: 20px;
+        margin-left: auto;
+        margin-right: 0.25rem;
+        flex-shrink: 0;
+    }
+
+    /* Mobile collapsible panel */
+    .mobile-status-panel {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+        background: var(--background-light);
+        border-radius: 10px;
+        margin: 0.25rem 0;
+    }
+
+    .mobile-status-panel.open {
+        max-height: 500px;
+        padding: 0.35rem;
+    }
+
+    .mobile-status-row {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0.6rem 0.85rem;
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text-dark);
+        font-size: 0.88rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+
+    .mobile-status-row:hover {
+        background: white;
+        color: var(--primary-color);
+    }
+
+    .mobile-status-row:hover .mobile-status-row-icon {
+        color: var(--primary-color);
+    }
+
+    .mobile-status-row-icon {
+        font-size: 1rem;
+        color: var(--text-muted);
+        width: 20px;
+        flex-shrink: 0;
+        transition: color 0.2s;
+    }
+
+    .mobile-status-row-label {
+        flex: 1;
     }
 
     .mobile-actions {
@@ -926,9 +1200,6 @@
         box-shadow: 0 4px 12px rgba(255, 107, 107, 0.4);
     }
 
-    /* ============================================
-       RESPONSIVE ADJUSTMENTS
-       ============================================ */
     @media (max-width: 768px) {
         .notification-dropdown-menu {
             width: 320px;
@@ -946,74 +1217,72 @@
     }
 </style>
 
-{{-- ============================================
-     JAVASCRIPT - AUTO-REFRESH NOTIFICATIONS
-     ============================================ --}}
 <script>
+    /* ── Desktop: toggle the collapsible status panel ── */
+    function toggleStatusPanel(e) {
+        e.stopPropagation(); // prevent Bootstrap from closing the dropdown
+
+        const panel = document.getElementById('statusPanel');
+        const arrow = document.getElementById('statusArrow');
+
+        panel.classList.toggle('open');
+        arrow.classList.toggle('open');
+    }
+
+    /* ── Mobile: toggle the collapsible status panel ── */
+    function toggleMobileStatusPanel() {
+        const panel = document.getElementById('mobileStatusPanel');
+        const arrow = document.getElementById('mobileStatusArrow');
+
+        const isOpen = panel.classList.toggle('open');
+        arrow.style.transform = isOpen ? 'rotate(180deg)' : 'rotate(0deg)';
+    }
+
+    /* ── Auto-refresh notification badge ── */
     (function() {
         'use strict';
 
-        // Configuration
-        const REFRESH_INTERVAL = 30000; // 30 seconds
+        const REFRESH_INTERVAL = 30000;
         const NOTIFICATION_COUNT_URL = '{{ route('employer.notifications.unread-count') }}';
 
-        /**
-         * Updates the notification badge with the latest count
-         */
-        function updateNotificationBadge(count) {
+        function updateBadge(count) {
             const badge = document.querySelector('.notification-badge');
             const bell = document.querySelector('.notification-bell');
-
             if (!bell) return;
-
             if (count > 0) {
                 if (badge) {
                     badge.textContent = count;
                 } else {
-                    const newBadge = document.createElement('span');
-                    newBadge.className = 'notification-badge';
-                    newBadge.textContent = count;
-                    bell.appendChild(newBadge);
+                    const b = document.createElement('span');
+                    b.className = 'notification-badge';
+                    b.textContent = count;
+                    bell.appendChild(b);
                 }
             } else {
-                if (badge) {
-                    badge.remove();
-                }
+                if (badge) badge.remove();
             }
         }
 
-        /**
-         * Fetches the current unread notification count
-         */
-        function fetchNotificationCount() {
+        function fetchCount() {
             fetch(NOTIFICATION_COUNT_URL)
-                .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
-                    return response.json();
+                .then(r => {
+                    if (!r.ok) throw new Error('err');
+                    return r.json();
                 })
-                .then(data => {
-                    if (typeof data.count === 'number') {
-                        updateNotificationBadge(data.count);
-                    }
+                .then(d => {
+                    if (typeof d.count === 'number') updateBadge(d.count);
                 })
-                .catch(error => {
-                    console.error('Error fetching notification count:', error);
-                });
+                .catch(err => console.error('Notification fetch:', err));
         }
 
-        /**
-         * Initialize auto-refresh
-         */
         function init() {
-            setInterval(fetchNotificationCount, REFRESH_INTERVAL);
+            setInterval(fetchCount, REFRESH_INTERVAL);
         }
 
-        // Initialize when DOM is ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', init);
         } else {
             init();
         }
-
     })();
 </script>

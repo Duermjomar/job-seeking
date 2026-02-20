@@ -8,7 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Password;
+use Illuminate\Validation\Rules\Password; 
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Storage;
 
@@ -58,12 +58,10 @@ class ProfileController extends Controller
             'password' => ['required', 'confirmed', Password::min(8)],
         ]);
 
-        // Verify current password
         if (!Hash::check($request->current_password, auth()->user()->password)) {
             return back()->withErrors(['current_password' => 'Current password is incorrect.']);
         }
 
-        // Update password
         auth()->user()->update([
             'password' => Hash::make($request->password),
         ]);
@@ -109,5 +107,5 @@ class ProfileController extends Controller
 
 
 
-  
+
 }

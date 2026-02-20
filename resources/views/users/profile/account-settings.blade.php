@@ -69,22 +69,26 @@
                                     <label class="form-label-settings">
                                         <i class="bi bi-envelope-at me-2"></i>New Email Address
                                     </label>
-                                    <input type="email"
-                                           name="email"
-                                           class="form-control-settings"
-                                           placeholder="Enter new email address"
-                                           required>
+                                    <input type="email" name="email"
+                                        class="form-control-settings"
+                                        placeholder="Enter new email address"
+                                        value="{{ old('email') }}" required>
                                 </div>
 
                                 <div class="form-group-settings mb-4">
                                     <label class="form-label-settings">
                                         <i class="bi bi-key me-2"></i>Confirm Password
                                     </label>
-                                    <input type="password"
-                                           name="current_password"
-                                           class="form-control-settings"
-                                           placeholder="Enter your password to confirm"
-                                           required>
+                                    <div class="input-password-wrapper">
+                                        <input type="password" name="current_password"
+                                            id="email_current_password"
+                                            class="form-control-settings"
+                                            placeholder="Enter your password to confirm" required>
+                                        <button type="button" class="btn-eye"
+                                            onclick="togglePassword('email_current_password', 'eye-email')">
+                                            <i class="bi bi-eye" id="eye-email"></i>
+                                        </button>
+                                    </div>
                                     <small class="form-hint">We need your password to verify this change</small>
                                 </div>
 
@@ -110,7 +114,7 @@
                                 <span>Choose a strong password with at least 8 characters</span>
                             </div>
 
-                            <form action="{{ route('account.update.password') }}" method="POST">
+                            <form action="{{ route('account.update.password') }}" method="POST" id="passwordForm">
                                 @csrf
                                 @method('PUT')
 
@@ -118,36 +122,56 @@
                                     <label class="form-label-settings">
                                         <i class="bi bi-lock-fill me-2"></i>Current Password
                                     </label>
-                                    <input type="password"
-                                           name="current_password"
-                                           class="form-control-settings"
-                                           placeholder="Enter current password"
-                                           required>
+                                    <div class="input-password-wrapper">
+                                        <input type="password" name="current_password"
+                                            id="current_password"
+                                            class="form-control-settings"
+                                            placeholder="Enter current password" required>
+                                        <button type="button" class="btn-eye"
+                                            onclick="togglePassword('current_password', 'eye-current')">
+                                            <i class="bi bi-eye" id="eye-current"></i>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div class="form-group-settings mb-3">
                                     <label class="form-label-settings">
                                         <i class="bi bi-key-fill me-2"></i>New Password
                                     </label>
-                                    <input type="password"
-                                           name="password"
-                                           class="form-control-settings"
-                                           placeholder="Enter new password (min. 8 characters)"
-                                           required>
+                                    <div class="input-password-wrapper">
+                                        <input type="password" name="password"
+                                            id="new_password"
+                                            class="form-control-settings"
+                                            placeholder="Enter new password (min. 8 characters)"
+                                            oninput="validatePassword(this)" required>
+                                        <button type="button" class="btn-eye"
+                                            onclick="togglePassword('new_password', 'eye-new')">
+                                            <i class="bi bi-eye" id="eye-new"></i>
+                                        </button>
+                                    </div>
+                                    <small class="form-hint" id="password-strength-hint"></small>
                                 </div>
 
                                 <div class="form-group-settings mb-4">
                                     <label class="form-label-settings">
                                         <i class="bi bi-check2-square me-2"></i>Confirm New Password
                                     </label>
-                                    <input type="password"
-                                           name="password_confirmation"
-                                           class="form-control-settings"
-                                           placeholder="Re-enter new password"
-                                           required>
+                                    <div class="input-password-wrapper">
+                                        <input type="password" name="password_confirmation"
+                                            id="confirm_password"
+                                            class="form-control-settings"
+                                            placeholder="Re-enter new password"
+                                            oninput="validateConfirm(this)" required>
+                                        <button type="button" class="btn-eye"
+                                            onclick="togglePassword('confirm_password', 'eye-confirm')">
+                                            <i class="bi bi-eye" id="eye-confirm"></i>
+                                        </button>
+                                    </div>
+                                    <small class="form-hint" id="confirm-hint"></small>
                                 </div>
 
-                                <button type="submit" class="btn btn-update">
+                                <button type="submit" class="btn btn-update"
+                                    onclick="return submitPasswordForm(event)">
                                     <i class="bi bi-shield-check me-2"></i>Update Password
                                 </button>
                             </form>
@@ -172,13 +196,12 @@
                                     <h6 class="danger-title">Delete Account</h6>
                                     <p class="danger-text mb-0">Once you delete your account, there is no going back. Please be certain.</p>
                                 </div>
-                                <button type="button" 
-                                        class="btn btn-danger-action"
-                                        onclick="confirm('Are you sure you want to delete your account? This action cannot be undone.') && document.getElementById('deleteForm').submit()">
+                                <button type="button" class="btn btn-danger-action"
+                                    onclick="confirm('Are you sure you want to delete your account? This action cannot be undone.') && document.getElementById('deleteForm').submit()">
                                     <i class="bi bi-trash-fill me-2"></i>Delete Account
                                 </button>
                             </div>
-                            
+
                             <form id="deleteForm" action="{{ route('account.delete') }}" method="POST" style="display: none;">
                                 @csrf
                                 @method('DELETE')
@@ -208,7 +231,6 @@
         * { font-family: 'Outfit', sans-serif; }
         .account-settings-wrapper { min-height: 100vh; background: var(--background-light); }
 
-        /* Page Header */
         .page-header {
             background: linear-gradient(135deg, #FFFFFF 0%, #F7F9FC 100%);
             padding: 1.5rem; border-radius: 16px; border: 2px solid var(--border-color);
@@ -230,7 +252,6 @@
         }
         .btn-back:hover { background: var(--secondary-color); color: white; border-color: var(--secondary-color); }
 
-        /* Alerts */
         .alert-custom {
             border-radius: 12px; padding: 1rem 1.25rem; font-weight: 500;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08); animation: slideDown 0.3s ease;
@@ -239,11 +260,9 @@
         .alert-danger { background: linear-gradient(135deg, #FFE5E5, #FFD0D0); color: #C92A2A; }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* Settings Cards */
         .settings-card, .danger-zone-card {
             background: white; border-radius: 16px; border: 2px solid var(--border-color);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; transition: all 0.3s ease;
         }
         .settings-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); border-color: var(--primary-color); }
 
@@ -256,15 +275,11 @@
             display: flex; align-items: center;
         }
         .card-header-custom i { color: var(--primary-color); }
-
         .card-body-custom { padding: 1.5rem; }
 
-        /* Current Info Display */
-        .current-info { }
         .info-label {
             display: block; font-weight: 600; color: var(--text-muted);
-            font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px;
         }
         .info-display {
             background: linear-gradient(135deg, #F7F9FC, #FFF);
@@ -274,7 +289,6 @@
         }
         .info-display i { color: var(--secondary-color); }
 
-        /* Security Notice */
         .security-notice {
             background: linear-gradient(135deg, #FFF5F2, #FFE8E0);
             border: 2px solid rgba(255,107,53,0.3); border-radius: 10px;
@@ -282,13 +296,30 @@
             font-weight: 600; display: flex; align-items: center;
         }
 
-        /* Form Elements */
         .form-group-settings { position: relative; }
         .form-label-settings {
-            display: flex; align-items: center; font-weight: 600; color: var(--text-dark);
-            margin-bottom: 0.5rem; font-size: 0.9rem;
+            display: flex; align-items: center; font-weight: 600;
+            color: var(--text-dark); margin-bottom: 0.5rem; font-size: 0.9rem;
         }
         .form-label-settings i { color: var(--primary-color); font-size: 0.95rem; }
+
+        /* Password wrapper with eye icon */
+        .input-password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .input-password-wrapper .form-control-settings {
+            padding-right: 3rem;
+        }
+        .btn-eye {
+            position: absolute; right: 0.75rem;
+            background: none; border: none; color: var(--text-muted);
+            cursor: pointer; padding: 0; font-size: 1.1rem;
+            transition: color 0.2s ease;
+            display: flex; align-items: center; justify-content: center; z-index: 2;
+        }
+        .btn-eye:hover { color: var(--primary-color); }
 
         .form-control-settings {
             width: 100%; padding: 0.75rem 1rem; border: 2px solid var(--border-color);
@@ -300,10 +331,13 @@
             box-shadow: 0 0 0 4px rgba(255,107,53,0.1);
         }
         .form-control-settings::placeholder { color: var(--text-muted); opacity: 0.6; }
+        .form-control-settings.is-invalid { border-color: var(--danger-color) !important; }
+        .form-control-settings.is-valid { border-color: #0F6848 !important; }
 
         .form-hint { display: block; color: var(--text-muted); font-size: 0.8rem; margin-top: 0.4rem; }
+        .hint-error { color: #C92A2A !important; }
+        .hint-success { color: #0F6848 !important; }
 
-        /* Update Button */
         .btn-update {
             width: 100%; background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white; border: none; padding: 0.85rem 1.5rem; border-radius: 10px;
@@ -311,11 +345,8 @@
             box-shadow: 0 4px 12px rgba(255,107,53,0.3);
             display: flex; align-items: center; justify-content: center;
         }
-        .btn-update:hover {
-            transform: translateY(-2px); box-shadow: 0 6px 16px rgba(255,107,53,0.4);
-        }
+        .btn-update:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(255,107,53,0.4); }
 
-        /* Danger Zone */
         .danger-zone-card:hover { box-shadow: 0 4px 16px rgba(255,107,107,0.15); border-color: var(--danger-color); }
         .card-header-danger {
             background: linear-gradient(135deg, #FFE5E5, #FFD0D0);
@@ -325,7 +356,6 @@
             color: var(--danger-color); font-weight: 700; font-size: 1.05rem;
             display: flex; align-items: center;
         }
-
         .danger-title { color: var(--text-dark); font-weight: 700; font-size: 1rem; margin-bottom: 0.25rem; }
         .danger-text { color: var(--text-muted); font-size: 0.9rem; }
 
@@ -336,16 +366,91 @@
             box-shadow: 0 4px 12px rgba(255,107,107,0.3);
             display: flex; align-items: center; justify-content: center;
         }
-        .btn-danger-action:hover {
-            transform: translateY(-2px); box-shadow: 0 6px 16px rgba(255,107,107,0.4);
-        }
+        .btn-danger-action:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(255,107,107,0.4); }
 
-        /* Responsive */
         @media (max-width: 768px) {
             .page-header { padding: 1.25rem; }
             .header-icon { width: 56px; height: 56px; font-size: 1.5rem; }
             .page-header h3 { font-size: 1.25rem; }
         }
     </style>
+
+    <script>
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+
+        function validatePassword(input) {
+            const hint = document.getElementById('password-strength-hint');
+            const val = input.value;
+
+            if (val.length === 0) {
+                hint.textContent = '';
+                input.classList.remove('is-invalid', 'is-valid');
+            } else if (val.length < 8) {
+                hint.textContent = `⚠ Password too short: ${val.length}/8 characters minimum`;
+                hint.className = 'form-hint hint-error';
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+            } else {
+                hint.textContent = '✓ Password length is good';
+                hint.className = 'form-hint hint-success';
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+            }
+
+            const confirm = document.getElementById('confirm_password');
+            if (confirm.value.length > 0) validateConfirm(confirm);
+        }
+
+        function validateConfirm(input) {
+            const hint = document.getElementById('confirm-hint');
+            const newPass = document.getElementById('new_password').value;
+
+            if (input.value.length === 0) {
+                hint.textContent = '';
+                input.classList.remove('is-invalid', 'is-valid');
+            } else if (input.value !== newPass) {
+                hint.textContent = '✗ Passwords do not match';
+                hint.className = 'form-hint hint-error';
+                input.classList.add('is-invalid');
+                input.classList.remove('is-valid');
+            } else {
+                hint.textContent = '✓ Passwords match';
+                hint.className = 'form-hint hint-success';
+                input.classList.remove('is-invalid');
+                input.classList.add('is-valid');
+            }
+        }
+
+        function submitPasswordForm(event) {
+            const newPass = document.getElementById('new_password');
+            const confirmPass = document.getElementById('confirm_password');
+
+            if (newPass.value.length < 8) {
+                event.preventDefault();
+                validatePassword(newPass);
+                newPass.focus();
+                return false;
+            }
+
+            if (newPass.value !== confirmPass.value) {
+                event.preventDefault();
+                validateConfirm(confirmPass);
+                confirmPass.focus();
+                return false;
+            }
+
+            return true;
+        }
+    </script>
     @endsection
 @endcan

@@ -70,8 +70,7 @@ class ApplicationController extends Controller
                     'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048';
             }
 
-            $validationRules['application_letter'] =
-                'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048';
+            // Application letter is not used when templates exist
         } else {
             $validationRules['application_letter'] =
                 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:2048';
@@ -132,7 +131,8 @@ class ApplicationController extends Controller
 
                 if ($file) {
 
-                    $originalName = time() . '_' . $file->getClientOriginalName();
+                    // Use original filename (prefixed with application ID to avoid collisions)
+                    $originalName = $application->id . '_' . $file->getClientOriginalName();
 
                     $filePath = $file->storeAs(
                         'applications/templates',
@@ -143,7 +143,7 @@ class ApplicationController extends Controller
                     $application->files()->create([
                         'file_path' => $filePath,
                         'file_type' => 'other',
-                        'original_name' => $originalName,
+                        'original_name' => $file->getClientOriginalName(), // store clean original name
                         'mime_type' => $file->getMimeType(),
                         'file_size' => $file->getSize(),
                     ]);
@@ -153,13 +153,13 @@ class ApplicationController extends Controller
 
         /*
         |--------------------------------------------------------------------------
-        | Upload Application Letter (if provided)
+        | Upload Application Letter (only when no templates)
         |--------------------------------------------------------------------------
         */
 
-        if ($request->hasFile('application_letter')) {
+        if (!$hasTemplates && $request->hasFile('application_letter')) {
             $file = $request->file('application_letter');
-            $originalName = time() . '_application_letter_' . $file->getClientOriginalName();
+            $originalName = $application->id . '_application_letter_' . $file->getClientOriginalName();
 
             $filePath = $file->storeAs(
                 'applications/letters',
@@ -170,7 +170,7 @@ class ApplicationController extends Controller
             $application->files()->create([
                 'file_path' => $filePath,
                 'file_type' => 'application_letter',
-                'original_name' => $originalName,
+                'original_name' => $file->getClientOriginalName(), // store clean original name
                 'mime_type' => $file->getMimeType(),
                 'file_size' => $file->getSize(),
             ]);
@@ -182,7 +182,7 @@ class ApplicationController extends Controller
         |--------------------------------------------------------------------------
         */
 
-        // Job Seeker Notification (FIXED highlight)
+        // Job Seeker Notification
         Notification::create([
             'user_id' => $user->id,
             'type' => $reapplyCount > 0 ? 'reapplication_submitted' : 'application_submitted',
@@ -196,7 +196,7 @@ class ApplicationController extends Controller
                 'reapply_count' => $reapplyCount,
             ],
             'action_url' => route('users.applications', [
-                'highlight' => $job->id, // Use job_id for highlighting
+                'highlight' => $job->id,
             ]),
             'icon' => 'bi-send-fill',
             'color' => 'success',
@@ -252,14 +252,14 @@ class ApplicationController extends Controller
 
             $totalApplications = $applications->count();
             $pendingApplications = $applications->where('application_status', 'pending')->count();
-            
+
             // Count all interview-related statuses
             $interviewApplications = $applications->whereIn('application_status', [
                 'shortlisted',
                 'interview_scheduled',
                 'interviewed'
             ])->count();
-            
+
             $acceptedApplications = $applications->where('application_status', 'accepted')->count();
             $rejectedApplications = $applications->where('application_status', 'rejected')->count();
         }

@@ -4,11 +4,11 @@ namespace App\Http\Controllers\Users;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Users\Feedbacks;
+use App\Models\Feedbacks;
 use App\Models\Notification;
 use App\Models\User;
-use Gate;
-use Auth;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 class UserCTRLFeedbacks extends Controller
 {
@@ -18,27 +18,15 @@ class UserCTRLFeedbacks extends Controller
     }
 
     /**
-     * Display a listing of the resource.
-     */
-    public function index()
-    {
-        //
-    }
-
-    /**
-     * Show the form for creating a new resource.
+     * Show the feedback submission form.
      */
     public function create()
     {
-        if (Gate::denies('user-access')) {
-            return redirect('errors.403');
-        }
-
         return view('users.feedback.create');
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created feedback in storage.
      */
     public function store(Request $request)
     {
@@ -50,6 +38,7 @@ class UserCTRLFeedbacks extends Controller
 
         // Save the feedback
         $feedback = Feedbacks::create([
+            'user_id'  => Auth::id(),
             'email'    => $request->email,
             'rate'     => $request->rate,
             'comments' => $request->comm,
@@ -86,10 +75,10 @@ class UserCTRLFeedbacks extends Controller
                     'feedback_id' => $feedback->id,
                     'email'       => $request->email,
                     'rate'        => $request->rate,
-                    'comment'     => \Illuminate\Support\Str::limit($request->comm, 100),
+                    'comment'     => Str::limit($request->comm, 100),
                 ]),
                 'read'       => false,
-                'action_url' => route('admin.userFeedback'),
+                'action_url' => route('admin.notifications.index'),
                 'icon'       => 'bi-chat-square-text-fill',
                 'color'      => $notifColor,
             ]);
@@ -99,44 +88,12 @@ class UserCTRLFeedbacks extends Controller
     }
 
     /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
-
-    /**
-     * Display user's feedback list
+     * Display the current user's feedback history.
      */
     public function myfeedback()
     {
-        $myfeedbacks = Feedbacks::where('email', Auth::user()->email)
-            ->orderBy('created_at', 'desc')
+        $myfeedbacks = Feedbacks::where('user_id', Auth::id())
+            ->latest()
             ->paginate(10);
 
         return view('users.feedback.myfeedbacks', compact('myfeedbacks'));

@@ -10,11 +10,7 @@ class Feedbacks extends Model
     use HasFactory;
 
 
-    protected $fillable = [
-        'email',
-        'rate',
-        'comments'
-    ];
+     protected $fillable = ['user_id', 'email', 'rate', 'comments'];
 
 
     // Add this to cast created_at and updated_at as Carbon instances
@@ -22,5 +18,9 @@ class Feedbacks extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+    public function user()
+    {
+        return $this->belongsTo( User::class);
+    }
 
 }

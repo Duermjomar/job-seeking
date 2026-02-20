@@ -161,64 +161,60 @@ Route::
 
         });
 
+Route::prefix('employer')
+    ->name('employer.')
+    ->middleware(['auth', 'can:employer-access'])
+    ->namespace('App\Http\Controllers\Employer')
+    ->group(function () {
 
-Route::
-        namespace('App\Http\Controllers\Emplpoyer')->prefix('employer')->name('employer.')->middleware('can:emplpoyer-access')->middleware('auth')->group(function () {
+        Route::resource('/feedback', 'CTRLFeedbacks')->only(['create', 'store']);
+        Route::get('/myfeedbacks', [App\Http\Controllers\Employer\CTRLFeedbacks::class, 'index'])
+            ->name('myfeedback');
 
-            // add routes here for users 
-            Route::resource('/feedback', 'CTRLFeedbacks', ['except' => ['update', 'edit', 'destroy']]);
+        Route::get('/job-seeker/dashboard', [EmployerApplicationController::class, 'dashboard'])
+            ->name('jobseeker.dashboard');
 
-            Route::get('/myfeedbacks', 'CTRLFeedbacks@myfeedback')->name('myfeedback');
+        // ✅ Static routes FIRST (before any {job} wildcard)
+        Route::get('/jobs/create', [EmployerJobController::class, 'create'])
+            ->name('jobs.create');
+        Route::post('/jobs', [EmployerJobController::class, 'store'])
+            ->name('jobs.store');
 
-            Route::get('/job-seeker/dashboard', [EmployerApplicationController::class, 'dashboard'])
-                ->name('jobseeker.dashboard');
+        // ✅ Wildcard routes AFTER static ones
+        Route::get('/jobs/{job}/applicants', [EmployerApplicationController::class, 'allByStatus'])
+            ->name('jobs.applicants');
+        Route::get('/jobs/{job}/edit', [EmployerJobController::class, 'edit'])
+            ->name('jobs.edit');
+        Route::put('/jobs/{job}', [EmployerJobController::class, 'update'])
+            ->name('jobs.update');
+        Route::delete('/jobs/{job}', [EmployerJobController::class, 'destroy'])
+            ->name('jobs.destroy');
 
-            // Accept / Reject applicant
-            Route::post('/applications/{application}/update-status', [EmployerApplicationController::class, 'updateStatus'])
-                ->name('applications.updateStatus');
+        Route::get('/applicants', [EmployerApplicationController::class, 'allByStatus'])
+            ->name('applicants.byStatus');
 
-            Route::get('/jobs/{job}/edit', [EmployerJobController::class, 'edit'])
-                ->name('jobs.edit');
+        Route::get('/templates/{template}/view', [EmployerJobController::class, 'viewTemplate'])
+            ->name('templates.view');
 
-            Route::put('/jobs/{job}', [EmployerJobController::class, 'update'])
-                ->name('jobs.update');
+        Route::post('/applications/{application}/update-status', [EmployerApplicationController::class, 'updateStatus'])
+            ->name('applications.updateStatus');
+        Route::post('/applications/{application}/schedule-interview', [InterviewController::class, 'scheduleInterview'])
+            ->name('interviews.schedule');
+        Route::post('/interviews/{interview}/status', [InterviewController::class, 'updateInterviewStatus'])
+            ->name('interviews.updateStatus');
+        Route::delete('/interviews/{interview}/cancel', [InterviewController::class, 'cancelInterview'])
+            ->name('interviews.cancel');
 
-            Route::delete('/jobs/{job}', [EmployerJobController::class, 'destroy'])
-                ->name('jobs.destroy');
-
-            Route::get('/jobs/{job}/applicants', [EmployerJobController::class, 'applicants'])
-                ->name('jobs.applicants');
-
-            Route::get('/jobs/create', [EmployerJobController::class, 'create'])
-                ->name('jobs.create');
-
-            Route::post('/jobs', [EmployerJobController::class, 'store'])
-                ->name('jobs.store');
-
-            Route::get('/templates/{template}/view', [EmployerJobController::class, 'viewTemplate'])
-                ->name('templates.view');
-
-
-            Route::prefix('notifications')->name('notifications.')->group(function () {
-                Route::get('/', [EmployerNotificationController::class, 'index'])->name('index');
-                Route::get('/{id}/mark-read', [EmployerNotificationController::class, 'markAsRead'])->name('mark-read');
-                Route::post('/mark-all-read', [EmployerNotificationController::class, 'markAllAsRead'])->name('mark-all-read');
-                Route::delete('/{id}', [EmployerNotificationController::class, 'destroy'])->name('destroy');
-                Route::delete('/clear-read', [EmployerNotificationController::class, 'clearRead'])->name('clear-read');
-
-                // AJAX endpoints
-                Route::get('/unread-count', [EmployerNotificationController::class, 'getUnreadCount'])->name('unread-count');
-                Route::get('/latest', [EmployerNotificationController::class, 'getLatest'])->name('latest');
-            });
-
-            Route::post('/applications/{application}/schedule-interview', [InterviewController::class, 'scheduleInterview'])
-                ->name('interviews.schedule');
-            Route::post('/interviews/{interview}/status', [InterviewController::class, 'updateInterviewStatus'])
-                ->name('interviews.updateStatus');
-            Route::delete('/interviews/{interview}/cancel', [InterviewController::class, 'cancelInterview'])
-                ->name('interviews.cancel');
+        Route::prefix('notifications')->name('notifications.')->group(function () {
+            Route::get('/', [EmployerNotificationController::class, 'index'])->name('index');
+            Route::get('/{id}/mark-read', [EmployerNotificationController::class, 'markAsRead'])->name('mark-read');
+            Route::post('/mark-all-read', [EmployerNotificationController::class, 'markAllAsRead'])->name('mark-all-read');
+            Route::delete('/{id}', [EmployerNotificationController::class, 'destroy'])->name('destroy');
+            Route::delete('/clear-read', [EmployerNotificationController::class, 'clearRead'])->name('clear-read');
+            Route::get('/unread-count', [EmployerNotificationController::class, 'getUnreadCount'])->name('unread-count');
+            Route::get('/latest', [EmployerNotificationController::class, 'getLatest'])->name('latest');
         });
-
+    });
 
 
 

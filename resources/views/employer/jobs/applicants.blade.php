@@ -19,7 +19,17 @@
                                 </div>
                                 <div class="ms-3">
                                     <h3 class="mb-1">Applicants</h3>
-                                    <p class="job-title-header mb-0">{{ $job->job_title }}</p>
+                                    @if ($job)
+                                        <p class="job-title-header mb-0">{{ $job->job_title }}</p>
+                                    @else
+                                        <p class="job-title-header mb-0">
+                                            All Applications
+                                            @if ($status)
+                                                — <span
+                                                    style="text-transform: capitalize;">{{ str_replace('_', ' ', $status) }}</span>
+                                            @endif
+                                        </p>
+                                    @endif
                                 </div>
                             </div>
                             <div class="header-stats">
@@ -50,41 +60,41 @@
                 {{-- Filter Tabs --}}
                 <div class="filter-section mb-4">
                     <div class="filter-tabs">
-                        <button class="filter-tab active" onclick="filterApplicants('all')">
+                        <button class="filter-tab" onclick="filterApplicants('all', this)">
                             <i class="bi bi-grid me-1"></i>
                             All <span class="tab-count">({{ $applications->count() }})</span>
                         </button>
-                        <button class="filter-tab" onclick="filterApplicants('pending')">
+                        <button class="filter-tab" onclick="filterApplicants('pending', this)">
                             <i class="bi bi-clock me-1"></i>
                             Pending <span
                                 class="tab-count">({{ $applications->where('application_status', 'pending')->count() }})</span>
                         </button>
-                        <button class="filter-tab" onclick="filterApplicants('reviewed')">
+                        <button class="filter-tab" onclick="filterApplicants('reviewed', this)">
                             <i class="bi bi-eye me-1"></i>
                             Reviewed <span
                                 class="tab-count">({{ $applications->where('application_status', 'reviewed')->count() }})</span>
                         </button>
-                        <button class="filter-tab" onclick="filterApplicants('shortlisted')">
+                        <button class="filter-tab" onclick="filterApplicants('shortlisted', this)">
                             <i class="bi bi-star me-1"></i>
                             Shortlisted <span
                                 class="tab-count">({{ $applications->where('application_status', 'shortlisted')->count() }})</span>
                         </button>
-                        <button class="filter-tab" onclick="filterApplicants('interview_scheduled')">
+                        <button class="filter-tab" onclick="filterApplicants('interview_scheduled', this)">
                             <i class="bi bi-calendar-check me-1"></i>
                             Interview <span
                                 class="tab-count">({{ $applications->where('application_status', 'interview_scheduled')->count() }})</span>
                         </button>
-                        <button class="filter-tab" onclick="filterApplicants('interviewed')">
+                        <button class="filter-tab" onclick="filterApplicants('interviewed', this)">
                             <i class="bi bi-chat-dots me-1"></i>
                             Interviewed <span
                                 class="tab-count">({{ $applications->where('application_status', 'interviewed')->count() }})</span>
                         </button>
-                        <button class="filter-tab" onclick="filterApplicants('accepted')">
+                        <button class="filter-tab" onclick="filterApplicants('accepted', this)">
                             <i class="bi bi-check-circle me-1"></i>
                             Accepted <span
                                 class="tab-count">({{ $applications->where('application_status', 'accepted')->count() }})</span>
                         </button>
-                        <button class="filter-tab" onclick="filterApplicants('rejected')">
+                        <button class="filter-tab" onclick="filterApplicants('rejected', this)">
                             <i class="bi bi-x-circle me-1"></i>
                             Rejected <span
                                 class="tab-count">({{ $applications->where('application_status', 'rejected')->count() }})</span>
@@ -169,7 +179,6 @@
                                             </div>
 
                                             {{-- Profile Summary --}}
-                                            {{-- Profile Summary --}}
                                             @if ($app->jobSeeker->profile_summary)
                                                 <div class="detail-box mt-3">
                                                     <h6 class="detail-box-title">
@@ -180,7 +189,8 @@
                                                     </p>
                                                     <button class="btn-summary-toggle" id="toggleBtn-{{ $app->id }}"
                                                         onclick="toggleAppSummary({{ $app->id }})" style="display:none;">
-                                                        <i class="bi bi-chevron-down" id="toggleIcon-{{ $app->id }}"></i>
+                                                        <i class="bi bi-chevron-down"
+                                                            id="toggleIcon-{{ $app->id }}"></i>
                                                         <span id="toggleLabel-{{ $app->id }}">Show more</span>
                                                     </button>
                                                 </div>
@@ -466,8 +476,10 @@
                     @empty
                         <div class="empty-state">
                             <div class="empty-icon"><i class="bi bi-inbox"></i></div>
-                            <p class="empty-text">No applicants yet for this job</p>
-                            <p class="empty-subtext">Applications will appear here once job seekers apply</p>
+                            <p class="empty-text">No applicants found</p>
+                            <p class="empty-subtext">
+                                {{ $status ? 'No ' . str_replace('_', ' ', $status) . ' applications found.' : 'Applications will appear here once job seekers apply.' }}
+                            </p>
                         </div>
                     @endforelse
                 </div>
@@ -992,7 +1004,7 @@
                 flex-shrink: 0;
             }
 
-            /* ── Applicant Summary Clamp ── */
+            /* Summary Clamp */
             .detail-text.summary-clamp {
                 display: -webkit-box;
                 -webkit-line-clamp: 3;
@@ -1358,7 +1370,7 @@
                 font-weight: 700;
             }
 
-            /* Interview Modal Styles */
+            /* Interview Modal */
             .interview-modal-content {
                 border-radius: 16px;
                 border: none;
@@ -1567,15 +1579,23 @@
         </style>
 
         <script>
+            /* ── Toggle individual applicant card ── */
             function toggleCard(index) {
                 const card = document.querySelector(`[data-index="${index}"]`);
                 card.classList.toggle('expanded');
             }
 
-            function filterApplicants(status) {
+            /* ── Filter tabs by status ── */
+            function filterApplicants(status, clickedBtn) {
+                // Remove active from all tabs
                 document.querySelectorAll('.filter-tab').forEach(tab => tab.classList.remove('active'));
-                event.target.classList.add('active');
 
+                // Set active on clicked button
+                if (clickedBtn) {
+                    clickedBtn.classList.add('active');
+                }
+
+                // Show/hide cards
                 document.querySelectorAll('.applicant-card').forEach(card => {
                     card.classList.remove('expanded');
                     if (status === 'all' || card.dataset.status === status) {
@@ -1586,6 +1606,7 @@
                 });
             }
 
+            /* ── Interview Modal ── */
             function showInterviewModal(appId) {
                 const modal = new bootstrap.Modal(document.getElementById('interviewModal'));
                 const form = document.getElementById('interviewForm');
@@ -1593,6 +1614,7 @@
                 modal.show();
             }
 
+            /* ── Reject Modal ── */
             function showRejectModal(appId) {
                 const modal = new bootstrap.Modal(document.getElementById('rejectModal'));
                 const form = document.getElementById('rejectForm');
@@ -1600,6 +1622,7 @@
                 modal.show();
             }
 
+            /* ── Interview type toggle ── */
             function toggleInterviewFields() {
                 const interviewType = document.getElementById('interviewType').value;
                 const meetingLinkField = document.getElementById('meetingLinkField');
@@ -1627,22 +1650,68 @@
                 }
             }
 
-            // Auto-expand and scroll to highlighted card
+            /* ── On page load ── */
             document.addEventListener('DOMContentLoaded', function() {
+
+                // 1. Auto-expand and scroll to highlighted card
                 const highlightCard = document.querySelector('.highlight-card');
                 if (highlightCard) {
                     highlightCard.classList.add('expanded');
                     setTimeout(() => {
-                        highlightCard.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
+                        highlightCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }, 100);
                     setTimeout(() => {
                         highlightCard.classList.remove('highlight-card');
                     }, 3000);
                 }
+
+                // 2. ── Auto-activate the correct filter tab based on ?status= URL param ──
+                //    Laravel injects the current status value here:
+                const urlStatus = "{{ request('status') }}";
+                const allTabs = document.querySelectorAll('.filter-tab');
+
+                // Clear any existing active states first
+                allTabs.forEach(t => t.classList.remove('active'));
+
+                if (urlStatus) {
+                    // Find the tab whose onclick contains the matching status string
+                    const matchingBtn = [...allTabs].find(btn => {
+                        const onclickAttr = btn.getAttribute('onclick') || '';
+                        return onclickAttr.includes(`'${urlStatus}'`);
+                    });
+
+                    if (matchingBtn) {
+                        // Activate matching tab and filter cards
+                        filterApplicants(urlStatus, matchingBtn);
+                    } else {
+                        // Fallback: show all, activate "All" tab
+                        if (allTabs[0]) allTabs[0].classList.add('active');
+                    }
+                } else {
+                    // No status param → default to "All" tab active, show all cards
+                    if (allTabs[0]) allTabs[0].classList.add('active');
+                }
+
+                // 3. Show/hide summary toggle buttons based on overflow
+                document.querySelectorAll('.summary-clamp').forEach(function(el) {
+                    const btn = document.getElementById('toggleBtn-' + el.id.split('-')[1]);
+                    if (btn && el.scrollHeight > el.clientHeight + 2) {
+                        btn.style.display = 'inline-flex';
+                    }
+                });
             });
+
+            /* ── Toggle profile summary expand/collapse ── */
+            function toggleAppSummary(appId) {
+                const el = document.getElementById('summary-' + appId);
+                const icon = document.getElementById('toggleIcon-' + appId);
+                const label = document.getElementById('toggleLabel-' + appId);
+
+                el.classList.toggle('expanded');
+                const isExpanded = el.classList.contains('expanded');
+                icon.className = isExpanded ? 'bi bi-chevron-up' : 'bi bi-chevron-down';
+                label.textContent = isExpanded ? 'Show less' : 'Show more';
+            }
         </script>
     @endsection
 @endcan
