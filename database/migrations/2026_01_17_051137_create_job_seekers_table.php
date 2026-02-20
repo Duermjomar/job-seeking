@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->date('birthdate')->nullable();
             $table->enum('gender', ['male', 'female', 'other'])->nullable();
             $table->string('resume')->nullable();
+            $table->string('resume_original')->nullable();
             $table->text('profile_summary')->nullable();
             $table->timestamps();
         });

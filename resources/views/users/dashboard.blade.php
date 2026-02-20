@@ -112,10 +112,11 @@
                                             <small class="profile-email">{{ auth()->user()->email }}</small>
                                         </div>
                                     </div>
-                                    <button type="button" class="btn btn-edit-profile" data-bs-toggle="modal"
-                                        data-bs-target="#editProfileModal">
+                                    <a href=" {{ route('users.profile.edit') }}" type="button" class="btn btn-edit-profile">
+
                                         <i class="bi bi-pencil-fill me-1"></i>Edit
-                                    </button>
+
+                                    </a>
                                 </div>
                             </div>
                             <div class="profile-body">
@@ -193,124 +194,7 @@
                     </div>
                 </div>
 
-                {{-- EDIT PROFILE MODAL --}}
-                <div class="modal fade" id="editProfileModal" tabindex="-1" aria-labelledby="editProfileModalLabel"
-                    aria-hidden="true">
-                    <div class="modal-dialog modal-lg">
-                        <form action="{{ route('users.jobseeker.profile.update') }}" method="POST"
-                            enctype="multipart/form-data">
-                            @csrf
-                            @method('PUT')
-                            <div class="modal-content modal-custom">
-                                <div class="modal-header modal-header-custom">
-                                    <h5 class="modal-title" id="editProfileModalLabel">
-                                        <i class="bi bi-person-fill-gear me-2"></i>Edit Profile
-                                    </h5>
-                                    <button type="button" class="btn-close btn-close-custom" data-bs-dismiss="modal"
-                                        aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body modal-body-custom">
-                                    <div class="row g-3">
-                                        {{-- Phone --}}
-                                        <div class="col-md-6">
-                                            <label class="modal-input-label">
-                                                <i class="bi bi-telephone-fill"></i>
-                                                Phone Number
-                                            </label>
-                                            <input type="text" name="phone" class="form-control modal-input"
-                                                value="{{ $jobSeeker->phone }}" placeholder="e.g., 09171234567"
-                                                maxlength="11" required
-                                                oninput="this.value = this.value.replace(/[^0-9]/g, '')">
 
-                                        </div>
-
-                                        {{-- Gender --}}
-                                        <div class="col-md-6">
-                                            <label class="modal-input-label">
-                                                <i class="bi bi-gender-ambiguous"></i>
-                                                Gender
-                                            </label>
-                                            <select name="gender" class="form-control modal-input" required>
-                                                <option value="">Select Gender</option>
-                                                <option value="male" {{ $jobSeeker->gender == 'male' ? 'selected' : '' }}>
-                                                    Male</option>
-                                                <option value="female" {{ $jobSeeker->gender == 'female' ? 'selected' : '' }}>
-                                                    Female</option>
-                                                <option value="other" {{ $jobSeeker->gender == 'other' ? 'selected' : '' }}>
-                                                    Other</option>
-                                            </select>
-                                        </div>
-
-                                        {{-- Birthdate --}}
-                                        <div class="col-md-6">
-                                            <label class="modal-input-label">
-                                                <i class="bi bi-calendar-fill"></i>
-                                                Birthdate
-                                            </label>
-                                            <input type="date" name="birthdate" class="form-control modal-input"
-                                                value="{{ $jobSeeker->birthdate }}" max="{{ date('Y-m-d') }}" required>
-                                        </div>
-
-                                        {{-- Address --}}
-                                        <div class="col-md-6">
-                                            <label class="modal-input-label">
-                                                <i class="bi bi-geo-alt-fill"></i>
-                                                Full address
-                                            </label>
-                                            <input type="text" name="address" class="form-control modal-input"
-                                                value="{{ $jobSeeker->address }}" placeholder="City, Province" required>
-                                        </div>
-
-                                        {{-- Resume Upload --}}
-                                        <div class="col-12">
-                                            <label class="modal-input-label">
-                                                <i class="bi bi-file-earmark-text-fill"></i>
-                                                Resume (PDF, DOC, DOCX)
-                                            </label>
-                                            @if ($jobSeeker->resume)
-                                                <div class="current-file-display">
-                                                    <i class="bi bi-file-earmark-check-fill"></i>
-                                                    <span>Current: </span>
-                                                    <a href="{{ asset('storage/' . $jobSeeker->resume) }}" target="_blank">
-                                                        View Resume
-                                                    </a>
-                                                </div>
-                                            @endif
-                                            <input type="file" name="resume" class="form-control modal-input"
-                                                accept=".pdf,.doc,.docx">
-                                            <small class="modal-hint">
-                                                <i class="bi bi-info-circle me-1"></i>
-                                                Leave blank to keep current resume. Max size: 2MB
-                                            </small>
-                                        </div>
-
-                                        {{-- Profile Summary --}}
-                                        <div class="col-12">
-                                            <label class="modal-input-label">
-                                                <i class="bi bi-file-text-fill"></i>
-                                                Profile Summary
-                                            </label>
-                                            <textarea name="profile_summary" class="form-control modal-textarea" rows="4" required
-                                                placeholder="Write a brief summary about yourself, skills, and career goals...">{{ $jobSeeker->profile_summary }}</textarea>
-                                            <small class="modal-hint">
-                                                <i class="bi bi-info-circle me-1"></i>
-                                                Write a short summary about yourself, your skills, and your goals (min. 50
-                                                characters).
-                                            </small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer modal-footer-custom">
-                                    <button type="button" class="btn btn-modal-cancel"
-                                        data-bs-dismiss="modal">Cancel</button>
-                                    <button type="submit" class="btn btn-modal-save">
-                                        <i class="bi bi-check-circle me-2"></i>Save Changes
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
 
                 {{-- Latest Jobs Section continues... --}}
                 {{-- LATEST JOBS --}}
@@ -655,11 +539,48 @@
                 margin-bottom: 0.75rem;
             }
 
+            /* NEW */
             .profile-summary-text {
                 color: var(--text-muted);
                 font-size: 0.95rem;
                 line-height: 1.7;
+                margin-bottom: 0.5rem;
+                display: -webkit-box;
+                -webkit-line-clamp: 4;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                transition: all 0.3s ease;
+                word-break: break-word;
+                overflow-wrap: break-word;
+            }
+
+            .profile-summary-text.expanded {
+                display: block;
+                -webkit-line-clamp: unset;
+            }
+
+            .btn-show-more {
+                background: none;
+                border: none;
+                color: var(--primary-color);
+                font-size: 0.85rem;
+                font-weight: 700;
+                padding: 0;
+                cursor: pointer;
                 margin-bottom: 1rem;
+                display: none;
+                transition: color 0.2s ease;
+            }
+
+            .btn-show-more:hover {
+                color: var(--primary-dark);
+                text-decoration: underline;
+            }
+
+            .btn-show-more.visible {
+                display: inline-flex;
+                align-items: center;
+                gap: 0.25rem;
             }
 
             .btn-view-resume {

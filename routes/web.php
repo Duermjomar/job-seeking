@@ -11,7 +11,9 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\Users\JobSeekerController;
 use App\Http\Controllers\Users\ApplicationController as UserApplicationController;
 use App\Http\Controllers\Users\JobController as UserJobController;
-use App\Http\Controllers\Employer\NotificationController as UserNotificationController;
+use App\Http\Controllers\Users\InterviewController as UsersInterviewController;
+use App\Http\Controllers\Users\NotificationController as UserNotificationController;
+
 
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
@@ -19,6 +21,9 @@ use App\Http\Controllers\Admin\NotificationController as AdminNotificationContro
 use App\Http\Controllers\Employer\NotificationController as EmployerNotificationController;
 use App\Http\Controllers\Employer\JobController as EmployerJobController;
 use App\Http\Controllers\Employer\ApplicationController as EmployerApplicationController;
+use App\Http\Controllers\Employer\InterviewController;
+
+
 
 
 
@@ -71,8 +76,10 @@ Route::
         namespace('App\Http\Controllers\Admin')->prefix('admin')->name('admin.')->middleware('can:admin-access')->group(function () {
 
             // add routes here for admin 
-            Route::resource('/users', 'UserController', ['except' => ['create', 'store', 'destroy']]);
-            Route::get('/userfeedbacks', 'UserController@userfeedback')->name('userfeedback');
+            Route::resource('users', UserController::class)->except(['create', 'store', 'destroy']);
+
+            // Custom route (fix controller method syntax)
+            Route::get('/userfeedbacks', [UserController::class, 'userFeedback'])->name('userFeedback');
 
             Route::get('/users/{user}', [UserController::class, 'viewUser'])->name('users.view');
 
@@ -100,15 +107,17 @@ Route::
         namespace('App\Http\Controllers\Users')->prefix('users')->name('users.')->middleware('can:user-access')->group(function () {
 
             // add routes here for users 
-            Route::resource('/feedback', 'CTRLFeedbacks', ['except' => ['update', 'edit', 'destroy']]);
+            Route::resource('/feedback', 'UserCTRLFeedbacks', ['except' => ['update', 'edit', 'destroy']]);
 
-            Route::get('/myfeedbacks', 'CTRLFeedbacks@myfeedback')->name('myfeedback');
+            Route::get('/myfeedbacks', 'UserCTRLFeedbacks@myfeedback')->name('myfeedback');
 
             Route::get('/job-seeker/dashboard', [UserApplicationController::class, 'dashboard'])
                 ->name('jobseeker.dashboard');
 
             Route::get('/jobs', [UserJobController::class, 'index'])->name('jobs.index');
             Route::get('/jobs/{job}', [UserJobController::class, 'show'])->name('jobs.show');
+
+            Route::get('user/profile', [JobSeekerController::class, 'userEditProfile'])->name('profile.edit');
 
             Route::put('/jobseeker/profile', [JobSeekerController::class, 'updateProfile'])
                 ->name('jobseeker.profile.update');
@@ -117,12 +126,16 @@ Route::
             Route::delete('/resume/delete', [JobSeekerController::class, 'deleteResume'])
                 ->name('resume.delete');
 
+
             // Download resume with original filename
             Route::get('/resume/download', [JobSeekerController::class, 'downloadResume'])
                 ->name('resume.download');
 
             Route::post('/jobs/{job}/apply', [UserApplicationController::class, 'store'])
                 ->name('jobs.apply');
+
+            Route::get('/jobs/{job}/check-reapply', [UserApplicationController::class, 'checkReapply'])
+                ->name('jobs.check-reapply');
 
             Route::get('/my-applications', [UserApplicationController::class, 'trackApplications'])->name('applications');
 
@@ -139,22 +152,23 @@ Route::
 
             });
 
-            Route::get('user/profile', [ProfileController::class, 'userEditProfile'])->name('profile.edit');
-            Route::put('user/profile/update', [ProfileController::class, 'userUpdateProfile'])->name('jobseeker.profile.update');
+            Route::get('/interviews/{interview}', [UsersInterviewController::class, 'show'])
+                ->name('interviews.show');
+            Route::get('/interviews', [UsersInterviewController::class, 'index'])
+                ->name('interviews.index');
+
+
 
         });
 
 
 Route::
-        namespace('App\Http\Controllers\Emplpoyers')->prefix('employer')->name('employer.')->middleware('can:emplpoyer-access')->middleware('auth')->group(function () {
+        namespace('App\Http\Controllers\Emplpoyer')->prefix('employer')->name('employer.')->middleware('can:emplpoyer-access')->middleware('auth')->group(function () {
 
             // add routes here for users 
             Route::resource('/feedback', 'CTRLFeedbacks', ['except' => ['update', 'edit', 'destroy']]);
 
             Route::get('/myfeedbacks', 'CTRLFeedbacks@myfeedback')->name('myfeedback');
-
-            // eto route ng search products
-            Route::get('/searchproducts', 'CTRLproducts@searchproducts')->name('searchproducts');
 
             Route::get('/job-seeker/dashboard', [EmployerApplicationController::class, 'dashboard'])
                 ->name('jobseeker.dashboard');
@@ -197,6 +211,12 @@ Route::
                 Route::get('/latest', [EmployerNotificationController::class, 'getLatest'])->name('latest');
             });
 
+            Route::post('/applications/{application}/schedule-interview', [InterviewController::class, 'scheduleInterview'])
+                ->name('interviews.schedule');
+            Route::post('/interviews/{interview}/status', [InterviewController::class, 'updateInterviewStatus'])
+                ->name('interviews.updateStatus');
+            Route::delete('/interviews/{interview}/cancel', [InterviewController::class, 'cancelInterview'])
+                ->name('interviews.cancel');
         });
 
 

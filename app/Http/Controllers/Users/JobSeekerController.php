@@ -9,105 +9,68 @@ use App\Http\Controllers\Controller;
 
 class JobSeekerController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index() {}
+    public function create() {}
+    public function store(Request $request) {}
+    public function show(string $id) {}
+     public function userEditProfile()
     {
-        //
-    }
+        $user = Auth::user();
+        $jobSeeker = $user->jobSeeker;
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return view('Users.profile.edit', compact('jobSeeker'));
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
-    }
+    public function update(Request $request, string $id) {}
+    public function destroy(string $id) {}
 
     public function updateProfile(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'required|string|max:20',
-            'gender' => 'required|in:male,female,other',
-            'birthdate' => 'required|date|before:today',
-            'address' => 'required|string|max:255',
-            'resume' => 'nullable|file|mimes:pdf,doc,docx|max:5120', // 5MB max
-            'profile_summary' => 'required|string|min:50'
+            'name'            => 'required|string|max:255',
+            'phone'           => 'required|string|max:20',
+            'gender'          => 'required|in:male,female,other',
+            'birthdate'       => 'required|date|before:today',
+            'address'         => 'required|string|max:255',
+            'resume'          => 'nullable|file|mimes:pdf,doc,docx|max:5120',
+            'profile_summary' => 'required|string|min:50',
         ]);
 
-        $user = auth()->user();
+        $user      = auth()->user();
         $jobSeeker = $user->jobSeeker;
 
         // Update user name
         $user->update(['name' => $validated['name']]);
 
-        // Handle resume upload SEPARATELY - don't include in $validated
+        // Handle resume upload — do this BEFORE fill() so we control both columns manually
         if ($request->hasFile('resume')) {
-            // Delete old resume if exists
+            $resumeFile   = $request->file('resume');
+
+            // Capture the original filename BEFORE doing anything with the file
+            $originalName = $resumeFile->getClientOriginalName();         // e.g. "John_Doe_CV.pdf"
+            $extension    = $resumeFile->getClientOriginalExtension();    // e.g. "pdf"
+            $nameWithout  = pathinfo($originalName, PATHINFO_FILENAME);   // e.g. "John_Doe_CV"
+
+            // Build a unique storage name to prevent collisions between users
+            $uniqueFilename = $nameWithout . '_' . $user->id . '_' . time() . '.' . $extension;
+
+            // Delete the old resume file from storage if one exists
             if ($jobSeeker->resume && Storage::disk('public')->exists($jobSeeker->resume)) {
                 Storage::disk('public')->delete($jobSeeker->resume);
             }
-            
-            // Get the uploaded file
-            $resumeFile = $request->file('resume');
-            
-            // Get original client filename
-            $originalFilename = $resumeFile->getClientOriginalName();
-            
-            // Store with exact original name in resumes folder
-            $storedPath = $resumeFile->storeAs('resumes', $originalFilename, 'public');
-            
-            // Update job seeker resume field directly
-            $jobSeeker->resume = $storedPath;
+
+            // Store using storeAs so WE control the filename, not Laravel
+            $storedPath = $resumeFile->storeAs('resumes', $uniqueFilename, 'public');
+
+            // Save both columns directly — do NOT go through fill() for these
+            $jobSeeker->resume          = $storedPath;    // storage path  e.g. resumes/John_Doe_CV_8_1714500000.pdf
+            $jobSeeker->resume_original = $originalName;  // display name  e.g. John_Doe_CV.pdf
         }
 
-        // Remove fields that shouldn't be mass assigned
+        // Remove fields that must not be mass-assigned to jobSeeker
         unset($validated['name']);
-        unset($validated['resume']); // Remove resume from validated to avoid overwriting
+        unset($validated['resume']); // IMPORTANT: remove so fill() doesn't overwrite resume column
 
-        // Update the job seeker profile with other fields
+        // Update all other profile fields
         $jobSeeker->fill($validated);
         $jobSeeker->save();
 
@@ -125,33 +88,35 @@ class JobSeekerController extends Controller
             if (!$jobSeeker || !$jobSeeker->resume) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No resume found to delete.'
+                    'message' => 'No resume found to delete.',
                 ], 404);
             }
 
-            // Delete file from storage if it exists
+            // Delete physical file from storage
             if (Storage::disk('public')->exists($jobSeeker->resume)) {
                 Storage::disk('public')->delete($jobSeeker->resume);
             }
 
-            // Update database to set resume to null
-            $jobSeeker->resume = null;
+            // Clear both columns directly — not through fill()
+            $jobSeeker->resume          = null;
+            $jobSeeker->resume_original = null;
             $jobSeeker->save();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Resume deleted successfully!'
+                'message' => 'Resume deleted successfully!',
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error deleting resume: ' . $e->getMessage()
+                'message' => 'Error deleting resume: ' . $e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Download resume with original filename
+     * Download resume — serves the file under the original filename the user uploaded.
      */
     public function downloadResume()
     {
@@ -167,21 +132,20 @@ class JobSeekerController extends Controller
             abort(404, 'File not found');
         }
 
-        // Get the filename from the stored path (basename extracts filename from path)
-        $filename = basename($jobSeeker->resume);
+        // Use the stored original name so the user gets back their own filename;
+        // fall back to the basename of the stored path for old records
+        $downloadName = $jobSeeker->resume_original ?? basename($jobSeeker->resume);
 
-        // Set correct MIME types
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
         $mimeTypes = [
-            'pdf' => 'application/pdf',
-            'doc' => 'application/msword',
+            'pdf'  => 'application/pdf',
+            'doc'  => 'application/msword',
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ];
 
         $contentType = $mimeTypes[strtolower($extension)] ?? 'application/octet-stream';
 
-        // Return file for download with original filename
-        return response()->download($filePath, $filename, [
+        return response()->download($filePath, $downloadName, [
             'Content-Type' => $contentType,
         ]);
     }

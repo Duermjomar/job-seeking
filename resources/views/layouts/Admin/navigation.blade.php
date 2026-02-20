@@ -128,7 +128,7 @@
                         </li>
                         <li>
                             <a class="dropdown-item-custom {{ request()->routeIs('admin.userfeedback') ? 'active' : '' }}" 
-                               href="{{ route('admin.userfeedback') }}">
+                               href="{{ route('admin.userFeedback') }}">
                                 <i class="bi bi-chat-dots-fill me-2"></i>Feedbacks
                             </a>
                         </li>
@@ -207,8 +207,8 @@
                 <i class="bi bi-people-fill"></i>
                 <span>Users</span>
             </a>
-            <a href="{{ route('admin.userfeedback') }}"
-                class="mobile-nav-link {{ request()->routeIs('admin.userfeedback') ? 'active' : '' }}">
+            <a href="{{ route('admin.userFeedback') }}"
+                class="mobile-nav-link {{ request()->routeIs('admin.userFeedback') ? 'active' : '' }}">
                 <i class="bi bi-chat-dots-fill"></i>
                 <span>Feedbacks</span>
             </a>

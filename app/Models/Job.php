@@ -1,4 +1,5 @@
 <?php
+// Job.php
 
 namespace App\Models;
 
@@ -20,8 +21,12 @@ class Job extends Model
         'status',
     ];
 
-    // Add this to always load templates
-    protected $with = ['templates'];
+    // REMOVED: protected $with = ['templates']
+    // Reason: auto-loading templates on every Job query causes unnecessary
+    // overhead on listing pages, dashboards, and admin views that don't need them.
+    // Instead, eager-load explicitly where needed:
+    //   Job::with('templates')->find($id)   ← in show/apply controller
+    //   $job->load('templates')             ← when already have the model
 
     public function employer()
     {
@@ -36,5 +41,23 @@ class Job extends Model
     public function templates()
     {
         return $this->hasMany(JobApplicationTemplate::class);
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | Helper Scopes
+    |--------------------------------------------------------------------------
+    */
+
+    /** Only open jobs */
+    public function scopeOpen($query)
+    {
+        return $query->where('status', 'open');
+    }
+
+    /** Only closed jobs */
+    public function scopeClosed($query)
+    {
+        return $query->where('status', 'closed');
     }
 }

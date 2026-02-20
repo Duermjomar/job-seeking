@@ -14,8 +14,22 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('job_id')->constrained()->onDelete('cascade');
             $table->foreignId('job_seeker_id')->constrained()->onDelete('cascade');
-            $table->enum('application_status', ['pending', 'reviewed', 'accepted', 'rejected'])
-                ->default('pending');
+            $table->enum('application_status', [
+                'pending',
+                'reviewed',
+                'shortlisted',
+                'interview_scheduled',
+                'interviewed',
+                'accepted',
+                'rejected'
+            ])->default('pending'); //
+            $table->text('rejection_reason')->nullable();
+
+            // Track how many times user reapplied
+            $table->integer('reapply_count')->default(0);
+
+            // Track last status update (important for profile comparison)
+            $table->timestamp('status_updated_at')->nullable();
             $table->timestamp('applied_at')->useCurrent();
             $table->timestamps();
 

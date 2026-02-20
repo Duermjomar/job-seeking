@@ -107,66 +107,7 @@ class ProfileController extends Controller
         return redirect()->route('login')->with('success', 'Your account has been deleted successfully.');
     }
 
-    public function userUpdateProfile(Request $request)
-    {
-        $user = Auth::user();
-        $jobSeeker = $user->jobSeeker;
-
-        // Validate the request - ONLY fields that exist in your migration
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
-            'birthdate' => 'nullable|date',
-            'gender' => 'nullable|in:male,female,other',
-            'profile_summary' => 'nullable|string|max:1000',
-            'resume' => 'nullable|file|mimes:pdf,doc,docx|max:5120', // 5MB max
-        ]);
-
-        // Update user name
-        $user->update([
-            'name' => $validated['name']
-        ]);
-
-        // Prepare job seeker data - ONLY your existing fields
-        $jobSeekerData = [
-            'phone' => $validated['phone'],
-            'address' => $validated['address'],
-            'birthdate' => $validated['birthdate'],
-            'gender' => $validated['gender'],
-            'profile_summary' => $validated['profile_summary'],
-        ];
-
-        // Handle resume upload
-        if ($request->hasFile('resume')) {
-            // Delete old resume if exists
-            if ($jobSeeker && $jobSeeker->resume) {
-                Storage::disk('public')->delete($jobSeeker->resume);
-            }
-
-            // Store new resume
-            $resumePath = $request->file('resume')->store('resumes', 'public');
-            $jobSeekerData['resume'] = $resumePath;
-        }
-
-        // Update or create job seeker profile
-        if ($jobSeeker) {
-            $jobSeeker->update($jobSeekerData);
-        } else {
-            $user->jobSeeker()->create($jobSeekerData);
-        }
-
-        return redirect()
-            ->route('users.profile.edit')
-            ->with('success', 'Profile updated successfully!');
-    }
 
 
-    public function userEditProfile()
-    {
-        $user = Auth::user();
-        $jobSeeker = $user->jobSeeker;
-
-        return view('Users.profile.edit', compact('jobSeeker'));
-    }
+  
 }

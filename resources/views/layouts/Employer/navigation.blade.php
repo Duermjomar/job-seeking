@@ -123,14 +123,14 @@
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item-custom {{ request()->routeIs('users.feedback.create') ? 'active' : '' }}"
-                                href="{{ route('users.feedback.create') }}">
+                            <a class="dropdown-item-custom {{ request()->routeIs('employer.feedback.create') ? 'active' : '' }}"
+                                href="{{ route('employer.feedback.create') }}">
                                 <i class="bi bi-chat-dots me-2"></i>Send Feedback
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item-custom {{ request()->routeIs('users.myfeedback') ? 'active' : '' }}"
-                                href="{{ route('users.myfeedback') }}">
+                            <a class="dropdown-item-custom {{ request()->routeIs('employer.myfeedback') ? 'active' : '' }}"
+                                href="{{ route('employer.myfeedback') }}">
                                 <i class="bi bi-envelope-check me-2"></i>My Feedbacks
                             </a>
                         </li>
@@ -206,12 +206,12 @@
                 <i class="bi bi-house-door"></i>
                 <span>Dashboard</span>
             </a>
-            <a href="{{ route('users.feedback.create') }}"
+            <a href="{{ route('employer.feedback.create') }}"
                 class="mobile-nav-link {{ request()->routeIs('employer.feedback.create') ? 'active' : '' }}">
                 <i class="bi bi-chat-dots"></i>
                 <span>Send Feedback</span>
             </a>
-            <a href="{{ route('users.myfeedback') }}"
+            <a href="{{ route('employer.myfeedback') }}"
                 class="mobile-nav-link {{ request()->routeIs('employer.myfeedback') ? 'active' : '' }}">
                 <i class="bi bi-envelope-check"></i>
                 <span>My Feedbacks</span>

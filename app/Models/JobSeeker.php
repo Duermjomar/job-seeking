@@ -15,23 +15,18 @@ class JobSeeker extends Model
         'address',
         'birthdate',
         'gender',
-        'resume',
         'profile_summary',
+        'resume',
+        'resume_original',
     ];
 
-    /**
-     * Link to User
-     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Applications made by this job seeker
-     */
     public function applications()
     {
-        return $this->hasMany(\App\Models\Application::class);
+        return $this->hasMany(Application::class);
     }
 }

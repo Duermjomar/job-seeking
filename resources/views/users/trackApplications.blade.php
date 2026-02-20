@@ -14,16 +14,63 @@
                     <div>
                         <a href="{{ route('dashboard') }}" class="btn btn-browse">
                             <i class="bi bi-arrow-left me-2"></i> Back
-
                         </a>
                         <a href="{{ route('users.jobs.index') }}" class="btn btn-browse">
                             <i class="bi bi-search me-2"></i>Browse Jobs
                         </a>
                     </div>
-
                 </div>
 
+                {{-- FLASH MESSAGES --}}
+                @if (session('success'))
+                    <div class="alert alert-success-custom">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        {{ session('success') }}
+                    </div>
+                @endif
 
+                {{-- STATS BAR --}}
+                <div class="stat-bar mb-4">
+                    <div class="stat-bar-item stat-bar-total">
+                        <i class="bi bi-briefcase-fill"></i>
+                        <div>
+                            <div class="stat-bar-number">{{ $totalApplications }}</div>
+                            <div class="stat-bar-label">Total</div>
+                        </div>
+                    </div>
+                    <div class="stat-bar-divider"></div>
+                    <div class="stat-bar-item stat-bar-pending">
+                        <i class="bi bi-clock-fill"></i>
+                        <div>
+                            <div class="stat-bar-number">{{ $pendingApplications }}</div>
+                            <div class="stat-bar-label">Pending</div>
+                        </div>
+                    </div>
+                    <div class="stat-bar-divider"></div>
+                    <div class="stat-bar-item stat-bar-interview">
+                        <i class="bi bi-calendar-check-fill"></i>
+                        <div>
+                            <div class="stat-bar-number">{{ $interviewApplications ?? 0 }}</div>
+                            <div class="stat-bar-label">Interview</div>
+                        </div>
+                    </div>
+                    <div class="stat-bar-divider"></div>
+                    <div class="stat-bar-item stat-bar-accepted">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div>
+                            <div class="stat-bar-number">{{ $acceptedApplications }}</div>
+                            <div class="stat-bar-label">Accepted</div>
+                        </div>
+                    </div>
+                    <div class="stat-bar-divider"></div>
+                    <div class="stat-bar-item stat-bar-rejected">
+                        <i class="bi bi-x-circle-fill"></i>
+                        <div>
+                            <div class="stat-bar-number">{{ $rejectedApplications }}</div>
+                            <div class="stat-bar-label">Rejected</div>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- FILTER TABS --}}
                 <div class="filter-tabs mb-4">
@@ -32,6 +79,18 @@
                     </button>
                     <button class="filter-tab" onclick="filterApplications('pending')">
                         <i class="bi bi-clock me-1"></i>Pending
+                    </button>
+                    <button class="filter-tab" onclick="filterApplications('reviewed')">
+                        <i class="bi bi-eye me-1"></i>Reviewed
+                    </button>
+                    <button class="filter-tab" onclick="filterApplications('shortlisted')">
+                        <i class="bi bi-star me-1"></i>Shortlisted
+                    </button>
+                    <button class="filter-tab" onclick="filterApplications('interview_scheduled')">
+                        <i class="bi bi-calendar-check me-1"></i>Interview
+                    </button>
+                    <button class="filter-tab" onclick="filterApplications('interviewed')">
+                        <i class="bi bi-chat-dots me-1"></i>Interviewed
                     </button>
                     <button class="filter-tab" onclick="filterApplications('accepted')">
                         <i class="bi bi-check-circle me-1"></i>Accepted
@@ -49,13 +108,24 @@
                             <div class="application-card-inner">
 
                                 {{-- Status Icon --}}
-                                <div
-                                    class="app-status-icon
-                                @if ($app->application_status === 'pending') status-icon-pending
-                                @elseif($app->application_status === 'accepted') status-icon-accepted
-                                @else status-icon-rejected @endif">
+                                <div class="app-status-icon
+                                    @if ($app->application_status === 'pending') status-icon-pending
+                                    @elseif($app->application_status === 'reviewed') status-icon-reviewed
+                                    @elseif($app->application_status === 'shortlisted') status-icon-shortlisted
+                                    @elseif($app->application_status === 'interview_scheduled') status-icon-interview
+                                    @elseif($app->application_status === 'interviewed') status-icon-interviewed
+                                    @elseif($app->application_status === 'accepted') status-icon-accepted
+                                    @else status-icon-rejected @endif">
                                     @if ($app->application_status === 'pending')
                                         <i class="bi bi-clock-fill"></i>
+                                    @elseif($app->application_status === 'reviewed')
+                                        <i class="bi bi-eye-fill"></i>
+                                    @elseif($app->application_status === 'shortlisted')
+                                        <i class="bi bi-star-fill"></i>
+                                    @elseif($app->application_status === 'interview_scheduled')
+                                        <i class="bi bi-calendar-check-fill"></i>
+                                    @elseif($app->application_status === 'interviewed')
+                                        <i class="bi bi-chat-dots-fill"></i>
                                     @elseif($app->application_status === 'accepted')
                                         <i class="bi bi-check-circle-fill"></i>
                                     @else
@@ -76,54 +146,90 @@
                                                 {{ ucfirst($app->job->job_type ?? 'N/A') }}
                                             </p>
                                         </div>
-                                        <span
-                                            class="app-status-badge
-                                        @if ($app->application_status === 'pending') badge-pending
-                                        @elseif($app->application_status === 'accepted') badge-accepted
-                                        @else badge-rejected @endif">
+                                        <span class="app-status-badge
+                                            @if ($app->application_status === 'pending') badge-pending
+                                            @elseif($app->application_status === 'reviewed') badge-reviewed
+                                            @elseif($app->application_status === 'shortlisted') badge-shortlisted
+                                            @elseif($app->application_status === 'interview_scheduled') badge-interview
+                                            @elseif($app->application_status === 'interviewed') badge-interviewed
+                                            @elseif($app->application_status === 'accepted') badge-accepted
+                                            @else badge-rejected @endif">
                                             @if ($app->application_status === 'pending')
                                                 <i class="bi bi-clock-fill me-1"></i>
+                                            @elseif($app->application_status === 'reviewed')
+                                                <i class="bi bi-eye-fill me-1"></i>
+                                            @elseif($app->application_status === 'shortlisted')
+                                                <i class="bi bi-star-fill me-1"></i>
+                                            @elseif($app->application_status === 'interview_scheduled')
+                                                <i class="bi bi-calendar-check-fill me-1"></i>
+                                            @elseif($app->application_status === 'interviewed')
+                                                <i class="bi bi-chat-dots-fill me-1"></i>
                                             @elseif($app->application_status === 'accepted')
                                                 <i class="bi bi-check-circle-fill me-1"></i>
                                             @else
                                                 <i class="bi bi-x-circle-fill me-1"></i>
                                             @endif
-                                            {{ ucfirst($app->application_status) }}
+                                            {{ ucfirst(str_replace('_', ' ', $app->application_status)) }}
                                         </span>
                                     </div>
 
                                     {{-- Progress Bar --}}
                                     <div class="app-progress-track">
-                                        <div
-                                            class="progress-step {{ $app->application_status !== '' ? 'done' : '' }} always-done">
+                                        {{-- Step 1: Applied (always done) --}}
+                                        <div class="progress-step done always-done">
                                             <div class="progress-dot"><i class="bi bi-check-lg"></i></div>
                                             <span>Applied</span>
                                         </div>
-                                        <div
-                                            class="progress-line
-                                        @if ($app->application_status === 'accepted' || $app->application_status === 'rejected') done @endif">
+                                        
+                                        <div class="progress-line
+                                            @if (in_array($app->application_status, ['reviewed', 'shortlisted', 'interview_scheduled', 'interviewed', 'accepted', 'rejected'])) done @endif">
                                         </div>
-                                        <div
-                                            class="progress-step
-                                        @if ($app->application_status === 'accepted' || $app->application_status === 'rejected') done
-                                        @else active @endif">
+                                        
+                                        {{-- Step 2: Reviewed/Shortlisted --}}
+                                        <div class="progress-step
+                                            @if ($app->application_status === 'reviewed') active
+                                            @elseif(in_array($app->application_status, ['shortlisted', 'interview_scheduled', 'interviewed', 'accepted', 'rejected'])) done @endif">
                                             <div class="progress-dot">
-                                                @if ($app->application_status === 'accepted' || $app->application_status === 'rejected')
+                                                @if (in_array($app->application_status, ['shortlisted', 'interview_scheduled', 'interviewed', 'accepted', 'rejected']))
                                                     <i class="bi bi-check-lg"></i>
+                                                @elseif($app->application_status === 'reviewed')
+                                                    <i class="bi bi-eye"></i>
                                                 @else
                                                     <i class="bi bi-clock"></i>
                                                 @endif
                                             </div>
-                                            <span>Under Review</span>
+                                            <span>Review</span>
                                         </div>
-                                        <div
-                                            class="progress-line
-                                        @if ($app->application_status === 'accepted' || $app->application_status === 'rejected') done @endif">
+                                        
+                                        <div class="progress-line
+                                            @if (in_array($app->application_status, ['interview_scheduled', 'interviewed', 'accepted', 'rejected'])) done @endif">
                                         </div>
-                                        <div
-                                            class="progress-step
-                                        @if ($app->application_status === 'accepted') done step-accepted
-                                        @elseif($app->application_status === 'rejected') done step-rejected @endif">
+                                        
+                                        {{-- Step 3: Interview --}}
+                                        <div class="progress-step
+                                            @if ($app->application_status === 'shortlisted') active
+                                            @elseif ($app->application_status === 'interview_scheduled') active
+                                            @elseif(in_array($app->application_status, ['interviewed', 'accepted', 'rejected'])) done @endif">
+                                            <div class="progress-dot">
+                                                @if (in_array($app->application_status, ['interviewed', 'accepted', 'rejected']))
+                                                    <i class="bi bi-check-lg"></i>
+                                                @elseif(in_array($app->application_status, ['shortlisted', 'interview_scheduled']))
+                                                    <i class="bi bi-calendar-check"></i>
+                                                @else
+                                                    <i class="bi bi-calendar"></i>
+                                                @endif
+                                            </div>
+                                            <span>Interview</span>
+                                        </div>
+                                        
+                                        <div class="progress-line
+                                            @if (in_array($app->application_status, ['accepted', 'rejected'])) done @endif">
+                                        </div>
+                                        
+                                        {{-- Step 4: Decision --}}
+                                        <div class="progress-step
+                                            @if ($app->application_status === 'accepted') done step-accepted
+                                            @elseif($app->application_status === 'rejected') done step-rejected @endif">
                                             <div class="progress-dot">
                                                 @if ($app->application_status === 'accepted')
                                                     <i class="bi bi-check-lg"></i>
@@ -136,6 +242,8 @@
                                             <span>
                                                 @if ($app->application_status === 'rejected')
                                                     Rejected
+                                                @elseif ($app->application_status === 'accepted')
+                                                    Hired!
                                                 @else
                                                     Decision
                                                 @endif
@@ -143,24 +251,174 @@
                                         </div>
                                     </div>
 
+                                    {{-- Interview Details (if scheduled) --}}
+                                    @if($app->application_status === 'interview_scheduled' && $app->interview)
+                                        <div class="interview-details-box">
+                                            <div class="interview-details-header">
+                                                <i class="bi bi-calendar-event-fill me-2"></i>
+                                                <strong>Interview Scheduled</strong>
+                                            </div>
+                                            <div class="interview-details-content">
+                                                <div class="interview-detail-row">
+                                                    <div class="interview-detail-icon">
+                                                        <i class="bi bi-clock-fill"></i>
+                                                    </div>
+                                                    <div class="interview-detail-info">
+                                                        <span class="interview-detail-label">Date & Time</span>
+                                                        <span class="interview-detail-value">
+                                                            {{ \Carbon\Carbon::parse($app->interview->scheduled_at)->format('l, F j, Y \a\t g:i A') }}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="interview-detail-row">
+                                                    <div class="interview-detail-icon">
+                                                        <i class="bi bi-{{ $app->interview->interview_type === 'online' ? 'camera-video-fill' : 'geo-alt-fill' }}"></i>
+                                                    </div>
+                                                    <div class="interview-detail-info">
+                                                        <span class="interview-detail-label">Type</span>
+                                                        <span class="interview-detail-value">{{ ucfirst($app->interview->interview_type) }}</span>
+                                                    </div>
+                                                </div>
+
+                                                @if($app->interview->interview_type === 'online' && $app->interview->meeting_link)
+                                                    <div class="interview-detail-row">
+                                                        <div class="interview-detail-icon">
+                                                            <i class="bi bi-link-45deg"></i>
+                                                        </div>
+                                                        <div class="interview-detail-info">
+                                                            <span class="interview-detail-label">Meeting Link</span>
+                                                            <a href="{{ $app->interview->meeting_link }}" 
+                                                               target="_blank" 
+                                                               class="interview-meeting-link">
+                                                                Join Meeting <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                @if($app->interview->interview_type === 'onsite' && $app->interview->location)
+                                                    <div class="interview-detail-row">
+                                                        <div class="interview-detail-icon">
+                                                            <i class="bi bi-geo-alt-fill"></i>
+                                                        </div>
+                                                        <div class="interview-detail-info">
+                                                            <span class="interview-detail-label">Location</span>
+                                                            <span class="interview-detail-value">{{ $app->interview->location }}</span>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                @if($app->interview->notes)
+                                                    <div class="interview-detail-row">
+                                                        <div class="interview-detail-icon">
+                                                            <i class="bi bi-journal-text"></i>
+                                                        </div>
+                                                        <div class="interview-detail-info">
+                                                            <span class="interview-detail-label">Additional Notes</span>
+                                                            <span class="interview-detail-value">{{ $app->interview->notes }}</span>
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                <div class="interview-countdown">
+                                                    <i class="bi bi-hourglass-split me-2"></i>
+                                                    <span>{{ \Carbon\Carbon::parse($app->interview->scheduled_at)->diffForHumans() }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    {{-- Shortlisted Notice --}}
+                                    @if($app->application_status === 'shortlisted')
+                                        <div class="shortlisted-notice-box">
+                                            <div class="shortlisted-notice-icon">
+                                                <i class="bi bi-star-fill"></i>
+                                            </div>
+                                            <div class="shortlisted-notice-content">
+                                                <strong>You've been shortlisted!</strong>
+                                                <p>Great news! The employer is interested in your application. An interview may be scheduled soon.</p>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    {{-- Interviewed Notice --}}
+                                    @if($app->application_status === 'interviewed')
+                                        <div class="interviewed-notice-box">
+                                            <div class="interviewed-notice-icon">
+                                                <i class="bi bi-check2-circle"></i>
+                                            </div>
+                                            <div class="interviewed-notice-content">
+                                                <strong>Interview Completed</strong>
+                                                <p>Your interview has been completed. We'll notify you once a decision has been made.</p>
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    {{-- Rejection Reason --}}
+                                    @if($app->rejection_reason && $app->application_status === 'rejected')
+                                        <div class="rejection-reason-box">
+                                            <div class="rejection-reason-header">
+                                                <i class="bi bi-info-circle-fill me-2"></i>
+                                                <strong>Rejection Reason</strong>
+                                            </div>
+                                            <p class="rejection-reason-text">{{ $app->rejection_reason }}</p>
+                                        </div>
+                                    @endif
+
                                     {{-- Bottom row: date + attachments --}}
                                     <div class="app-footer">
-                                        <span class="app-date">
-                                            <i class="bi bi-calendar3 me-1"></i>
-                                            Applied {{ $app->created_at->format('M d, Y') }}
-                                        </span>
+                                        <div class="app-date-info">
+                                            <span class="app-date">
+                                                <i class="bi bi-calendar3 me-1"></i>
+                                                Applied {{ $app->applied_at ? \Carbon\Carbon::parse($app->applied_at)->format('M d, Y') : $app->created_at->format('M d, Y') }}
+                                            </span>
+                                            @if($app->status_updated_at && $app->application_status !== 'pending')
+                                                <span class="app-date">
+                                                    <i class="bi bi-arrow-repeat me-1"></i>
+                                                    Updated {{ \Carbon\Carbon::parse($app->status_updated_at)->diffForHumans() }}
+                                                </span>
+                                            @endif
+                                        </div>
                                         <div class="app-attachments">
-                                            @if ($app->resume)
-                                                <a href="{{ asset('public/storage/' . $app->resume) }}" target="_blank"
-                                                    class="app-attachment-btn">
-                                                    <i class="bi bi-file-earmark-text me-1"></i>Resume
+                                            {{-- Resume from job_seekers table --}}
+                                            @if (auth()->user()->jobSeeker->resume)
+                                                <a href="{{ asset('storage/' . auth()->user()->jobSeeker->resume) }}" 
+                                                   target="_blank"
+                                                   download
+                                                   class="app-attachment-btn">
+                                                    <i class="bi bi-file-earmark-person me-1"></i>Resume
                                                 </a>
                                             @endif
-                                            @if ($app->application_letter)
-                                                <a href="{{ asset('public/storage/' . $app->application_letter) }}"
-                                                    target="_blank" class="app-attachment-btn btn-letter">
+
+                                            {{-- Application Letter from application_files --}}
+                                            @php
+                                                $letter = $app->files->where('file_type', 'application_letter')->first();
+                                            @endphp
+                                            @if($letter)
+                                                <a href="{{ asset('storage/' . $letter->file_path) }}" 
+                                                   target="_blank"
+                                                   download="{{ $letter->original_name }}"
+                                                   class="app-attachment-btn btn-letter">
                                                     <i class="bi bi-file-earmark-text me-1"></i>Letter
                                                 </a>
+                                            @endif
+
+                                            {{-- Template Files from application_files --}}
+                                            @php
+                                                $templateFiles = $app->files->where('file_type', 'other');
+                                            @endphp
+                                            @if($templateFiles->count() > 0)
+                                                @foreach($templateFiles as $templateFile)
+                                                    <a href="{{ asset('storage/' . $templateFile->file_path) }}" 
+                                                       target="_blank"
+                                                       download="{{ $templateFile->original_name }}"
+                                                       class="app-attachment-btn btn-template"
+                                                       title="{{ $templateFile->original_name }}">
+                                                        <i class="bi bi-file-earmark-check me-1"></i>
+                                                        {{ Str::limit(pathinfo($templateFile->original_name, PATHINFO_FILENAME), 15) }}
+                                                    </a>
+                                                @endforeach
                                             @endif
                                         </div>
                                     </div>
@@ -238,6 +496,23 @@
                 transform: translateX(-3px);
             }
 
+            /* Alert */
+            .alert-success-custom {
+                background: linear-gradient(135deg, #E8F8F5, #D5F4E6);
+                color: #0F6848;
+                border-radius: 12px;
+                padding: 1rem 1.25rem;
+                font-weight: 500;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                animation: slideDown 0.3s ease;
+                margin-bottom: 1rem;
+            }
+
+            @keyframes slideDown {
+                from { opacity: 0; transform: translateY(-10px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+
             /* Stat Bar */
             .stat-bar {
                 background: white;
@@ -294,6 +569,14 @@
 
             .stat-bar-pending .stat-bar-number {
                 color: var(--primary-color);
+            }
+
+            .stat-bar-interview i {
+                color: #3B82F6;
+            }
+
+            .stat-bar-interview .stat-bar-number {
+                color: #3B82F6;
             }
 
             .stat-bar-accepted i {
@@ -383,27 +666,13 @@
             }
 
             @keyframes highlightPulse {
-
-                0%,
-                100% {
-                    box-shadow: 0 12px 30px rgba(255, 107, 53, 0.25);
-                }
-
-                50% {
-                    box-shadow: 0 16px 40px rgba(255, 107, 53, 0.4);
-                }
+                0%, 100% { box-shadow: 0 12px 30px rgba(255, 107, 53, 0.25); }
+                50% { box-shadow: 0 16px 40px rgba(255, 107, 53, 0.4); }
             }
 
             @keyframes iconBounce {
-
-                0%,
-                100% {
-                    transform: scale(1);
-                }
-
-                50% {
-                    transform: scale(1.1);
-                }
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
             }
 
             .application-card-inner {
@@ -428,6 +697,26 @@
             .status-icon-pending {
                 background: linear-gradient(135deg, rgba(255, 107, 53, 0.15), rgba(255, 107, 53, 0.25));
                 color: var(--primary-color);
+            }
+
+            .status-icon-reviewed {
+                background: linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.25));
+                color: #6366F1;
+            }
+
+            .status-icon-shortlisted {
+                background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.25));
+                color: #F59E0B;
+            }
+
+            .status-icon-interview {
+                background: linear-gradient(135deg, rgba(59, 130, 246, 0.15), rgba(59, 130, 246, 0.25));
+                color: #3B82F6;
+            }
+
+            .status-icon-interviewed {
+                background: linear-gradient(135deg, rgba(168, 85, 247, 0.15), rgba(168, 85, 247, 0.25));
+                color: #A855F7;
             }
 
             .status-icon-accepted {
@@ -496,6 +785,30 @@
                 background: linear-gradient(135deg, #FFF4E6, #FFE8CC);
                 color: #D97706;
                 border: 1px solid #FFB84D;
+            }
+
+            .badge-reviewed {
+                background: linear-gradient(135deg, #E0E7FF, #C7D2FE);
+                color: #4338CA;
+                border: 1px solid #A5B4FC;
+            }
+
+            .badge-shortlisted {
+                background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+                color: #92400E;
+                border: 1px solid #F59E0B;
+            }
+
+            .badge-interview {
+                background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+                color: #1E40AF;
+                border: 1px solid #3B82F6;
+            }
+
+            .badge-interviewed {
+                background: linear-gradient(135deg, #EDE9FE, #DDD6FE);
+                color: #6B21A8;
+                border: 1px solid #A855F7;
             }
 
             .badge-accepted {
@@ -602,7 +915,7 @@
                 margin-bottom: 1.35rem;
                 border-radius: 3px;
                 transition: background 0.3s ease;
-                max-width: 80px;
+                max-width: 60px;
             }
 
             .progress-line.done {
@@ -610,15 +923,211 @@
             }
 
             @keyframes pulse {
+                0%, 100% { box-shadow: 0 3px 10px rgba(255, 107, 53, 0.4); }
+                50% { box-shadow: 0 3px 18px rgba(255, 107, 53, 0.7); }
+            }
 
-                0%,
-                100% {
-                    box-shadow: 0 3px 10px rgba(255, 107, 53, 0.4);
-                }
+            /* Interview Details Box */
+            .interview-details-box {
+                background: linear-gradient(135deg, #EFF6FF, #DBEAFE);
+                border: 2px solid #93C5FD;
+                border-radius: 12px;
+                padding: 1.25rem;
+                margin: 1rem 0;
+            }
 
-                50% {
-                    box-shadow: 0 3px 18px rgba(255, 107, 53, 0.7);
-                }
+            .interview-details-header {
+                color: #1E40AF;
+                font-weight: 700;
+                font-size: 1rem;
+                margin-bottom: 1rem;
+                display: flex;
+                align-items: center;
+            }
+
+            .interview-details-content {
+                display: flex;
+                flex-direction: column;
+                gap: 0.85rem;
+            }
+
+            .interview-detail-row {
+                display: flex;
+                align-items: flex-start;
+                gap: 0.85rem;
+                background: white;
+                padding: 0.75rem;
+                border-radius: 8px;
+            }
+
+            .interview-detail-icon {
+                width: 36px;
+                height: 36px;
+                background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #1E40AF;
+                font-size: 1.1rem;
+                flex-shrink: 0;
+            }
+
+            .interview-detail-info {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
+            .interview-detail-label {
+                font-size: 0.75rem;
+                color: var(--text-muted);
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+
+            .interview-detail-value {
+                font-size: 0.9rem;
+                color: var(--text-dark);
+                font-weight: 600;
+            }
+
+            .interview-meeting-link {
+                display: inline-flex;
+                align-items: center;
+                background: linear-gradient(135deg, #3B82F6, #2563EB);
+                color: white;
+                padding: 0.5rem 1rem;
+                border-radius: 8px;
+                font-weight: 700;
+                font-size: 0.85rem;
+                text-decoration: none;
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+            }
+
+            .interview-meeting-link:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+                color: white;
+            }
+
+            .interview-countdown {
+                background: white;
+                padding: 0.65rem 0.85rem;
+                border-radius: 8px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #1E40AF;
+                font-weight: 700;
+                font-size: 0.9rem;
+                border: 2px dashed #93C5FD;
+            }
+
+            /* Shortlisted Notice */
+            .shortlisted-notice-box {
+                background: linear-gradient(135deg, #FFFBEB, #FEF3C7);
+                border: 2px solid #FDE68A;
+                border-radius: 12px;
+                padding: 1rem;
+                margin: 1rem 0;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.85rem;
+            }
+
+            .shortlisted-notice-icon {
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #FBBF24, #F59E0B);
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 1.2rem;
+                flex-shrink: 0;
+            }
+
+            .shortlisted-notice-content strong {
+                color: #92400E;
+                font-size: 0.95rem;
+                display: block;
+                margin-bottom: 0.35rem;
+            }
+
+            .shortlisted-notice-content p {
+                color: var(--text-dark);
+                font-size: 0.85rem;
+                margin: 0;
+                line-height: 1.5;
+            }
+
+            /* Interviewed Notice */
+            .interviewed-notice-box {
+                background: linear-gradient(135deg, #FAF5FF, #EDE9FE);
+                border: 2px solid #DDD6FE;
+                border-radius: 12px;
+                padding: 1rem;
+                margin: 1rem 0;
+                display: flex;
+                align-items: flex-start;
+                gap: 0.85rem;
+            }
+
+            .interviewed-notice-icon {
+                width: 40px;
+                height: 40px;
+                background: linear-gradient(135deg, #A855F7, #9333EA);
+                border-radius: 10px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: white;
+                font-size: 1.2rem;
+                flex-shrink: 0;
+            }
+
+            .interviewed-notice-content strong {
+                color: #6B21A8;
+                font-size: 0.95rem;
+                display: block;
+                margin-bottom: 0.35rem;
+            }
+
+            .interviewed-notice-content p {
+                color: var(--text-dark);
+                font-size: 0.85rem;
+                margin: 0;
+                line-height: 1.5;
+            }
+
+            /* Rejection Reason Box */
+            .rejection-reason-box {
+                background: linear-gradient(135deg, #FFF5F5, #FFE8E8);
+                border-left: 4px solid #FF6B6B;
+                border-radius: 8px;
+                padding: 1rem;
+                margin: 1rem 0;
+            }
+
+            .rejection-reason-header {
+                color: #C92A2A;
+                font-weight: 700;
+                font-size: 0.9rem;
+                margin-bottom: 0.5rem;
+                display: flex;
+                align-items: center;
+            }
+
+            .rejection-reason-text {
+                color: var(--text-dark);
+                font-size: 0.88rem;
+                line-height: 1.6;
+                margin: 0;
             }
 
             /* Footer */
@@ -631,10 +1140,17 @@
                 gap: 0.75rem;
             }
 
+            .app-date-info {
+                display: flex;
+                flex-direction: column;
+                gap: 0.25rem;
+            }
+
             .app-date {
                 color: var(--text-muted);
                 font-size: 0.85rem;
                 font-weight: 500;
+                display: block;
             }
 
             .app-date i {
@@ -674,6 +1190,17 @@
 
             .app-attachment-btn.btn-letter:hover {
                 background: var(--secondary-color);
+                color: white;
+            }
+
+            .app-attachment-btn.btn-template {
+                background: linear-gradient(135deg, #F0F4FF, #E0E7FF);
+                color: #4338CA;
+                border-color: rgba(99, 102, 241, 0.25);
+            }
+
+            .app-attachment-btn.btn-template:hover {
+                background: #6366F1;
                 color: white;
             }
 
@@ -729,15 +1256,8 @@
             }
 
             @keyframes slideUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(18px);
-                }
-
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
+                from { opacity: 0; transform: translateY(18px); }
+                to { opacity: 1; transform: translateY(0); }
             }
 
             @media (max-width:767px) {
@@ -753,7 +1273,8 @@
                 }
 
                 .app-footer {
-                    justify-content: center;
+                    flex-direction: column;
+                    align-items: center;
                 }
 
                 .stat-bar-divider {
@@ -762,6 +1283,24 @@
 
                 .stat-bar {
                     gap: 1.25rem;
+                }
+
+                .app-progress-track {
+                    flex-wrap: wrap;
+                    justify-content: center;
+                }
+
+                .progress-line {
+                    max-width: 30px;
+                }
+
+                .interview-detail-row {
+                    flex-direction: column;
+                    text-align: center;
+                }
+
+                .interview-detail-icon {
+                    margin: 0 auto;
                 }
             }
         </style>

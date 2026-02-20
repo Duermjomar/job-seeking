@@ -29,6 +29,19 @@
                         </div>
                     @endif
 
+                    {{-- Validation Errors --}}
+                    @if ($errors->any())
+                        <div class="alert-custom alert-warning-custom mb-4">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <strong>Please fix the following:</strong>
+                            <ul class="mb-0 mt-2" style="list-style: none; padding-left: 0;">
+                                @foreach ($errors->all() as $error)
+                                    <li><i class="bi bi-dot"></i> {{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+
                     <div class="job-details-card">
 
                         {{-- JOB HEADER --}}
@@ -66,7 +79,7 @@
                                 Job Description
                             </div>
                             <div class="section-content">
-                                {{ $job->job_description }}
+                                {!! nl2br(e($job->job_description)) !!}
                             </div>
 
                             <hr class="divider">
@@ -77,7 +90,7 @@
                                 Requirements
                             </div>
                             <div class="section-content">
-                                {{ $job->requirements }}
+                                {!! nl2br(e($job->requirements)) !!}
                             </div>
 
                             {{-- Download Templates --}}
@@ -97,7 +110,8 @@
                                     <div class="template-list">
                                         @foreach ($job->templates as $template)
                                             <a href="{{ asset('storage/' . $template->file_path) }}"
-                                                class="btn-download-template mb-2" download>
+                                                class="btn-download-template mb-2" 
+                                                download="{{ $template->file_name }}">
                                                 <i class="bi bi-file-earmark-arrow-down"></i>
                                                 {{ $template->file_name }}
                                             </a>
@@ -113,18 +127,50 @@
                                 @php
                                     $user      = auth()->user();
                                     $jobSeeker = $user->jobSeeker;
-                                    $alreadyApplied = $jobSeeker
-                                        ? $job->applications()->where('job_seeker_id', $jobSeeker->id)->exists()
-                                        : false;
+                                    
+                                    $existingApplication = null;
+                                    if ($jobSeeker) {
+                                        $existingApplication = $job->applications()
+                                            ->where('job_seeker_id', $jobSeeker->id)
+                                            ->first();
+                                    }
+                                    
+                                    $canApply = false;
+                                    $isReapply = false;
+                                    $statusMessage = '';
+                                    $daysSinceRejection = 0;
+                                    $cooldownDays = 30;
+                                    
+                                    if (!$jobSeeker) {
+                                        $statusMessage = 'profile_needed';
+                                    } elseif (!$jobSeeker->resume) {
+                                        $statusMessage = 'resume_needed';
+                                    } elseif (!$existingApplication) {
+                                        $canApply = true;
+                                        $statusMessage = 'can_apply';
+                                    } elseif ($existingApplication->application_status === 'rejected') {
+                                        $daysSinceRejection = \Carbon\Carbon::parse($existingApplication->status_updated_at)->diffInDays(now());
+                                        if ($daysSinceRejection >= $cooldownDays) {
+                                            $canApply = true;
+                                            $isReapply = true;
+                                            $statusMessage = 'can_reapply';
+                                        } else {
+                                            $statusMessage = 'cooldown';
+                                        }
+                                    } else {
+                                        $statusMessage = 'already_applied';
+                                    }
                                 @endphp
 
-                                @if (!$jobSeeker)
+                                {{-- Profile Needed --}}
+                                @if ($statusMessage === 'profile_needed')
                                     <div class="alert-custom alert-danger-custom">
                                         <i class="bi bi-exclamation-circle-fill me-2"></i>
                                         You need to complete your Job Seeker profile to apply.
                                     </div>
 
-                                @elseif (!$jobSeeker->resume)
+                                {{-- Resume Needed --}}
+                                @elseif ($statusMessage === 'resume_needed')
                                     <div class="alert-custom alert-warning-custom">
                                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
                                         Please upload your resume in your profile before applying to jobs.
@@ -133,17 +179,72 @@
                                         </a>
                                     </div>
 
-                                @elseif ($alreadyApplied)
-                                    <button class="btn-applied-disabled" disabled>
-                                        <i class="bi bi-check-circle-fill"></i>
-                                        Already Applied to this Job
-                                    </button>
+                                {{-- Already Applied (Active) --}}
+                                @elseif ($statusMessage === 'already_applied')
+                                    <div class="already-applied-box">
+                                        <div class="already-applied-icon">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div class="already-applied-content">
+                                            <h6 class="already-applied-title">Already Applied to this Job</h6>
+                                            <p class="already-applied-text">
+                                                Your application is currently <strong>{{ ucfirst($existingApplication->application_status) }}</strong>. 
+                                                <a href="{{ route('users.applications', ['highlight' => $job->id]) }}" class="track-link">Track Application →</a>
+                                            </p>
+                                        </div>
+                                    </div>
 
-                                @else
+                                {{-- Cooldown Period --}}
+                                @elseif ($statusMessage === 'cooldown')
+                                    <div class="cooldown-box">
+                                        <div class="cooldown-icon">
+                                            <i class="bi bi-hourglass-split"></i>
+                                        </div>
+                                        <div class="cooldown-content">
+                                            <h6 class="cooldown-title">Re-apply Cooldown Period</h6>
+                                            <p class="cooldown-text">
+                                                Your previous application was rejected {{ $daysSinceRejection }} days ago. 
+                                                You can re-apply after <strong>{{ $cooldownDays - $daysSinceRejection }} more days</strong>.
+                                            </p>
+                                            <div class="cooldown-progress">
+                                                <div class="cooldown-progress-bar" style="width: {{ ($daysSinceRejection / $cooldownDays) * 100 }}%"></div>
+                                            </div>
+                                            <p class="cooldown-hint">
+                                                <i class="bi bi-lightbulb me-1"></i>
+                                                Use this time to improve your resume and qualifications!
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                {{-- Can Apply / Can Re-apply --}}
+                                @elseif ($canApply)
                                     <div class="application-section">
+                                        {{-- Re-apply Notice --}}
+                                        @if ($isReapply)
+                                            <div class="reapply-notice mb-4">
+                                                <div class="reapply-notice-icon">
+                                                    <i class="bi bi-arrow-repeat"></i>
+                                                </div>
+                                                <div class="reapply-notice-content">
+                                                    <h6 class="reapply-notice-title">Re-applying to this Position</h6>
+                                                    <p class="reapply-notice-text">
+                                                        You previously applied to this job and were rejected. This will be your 
+                                                        <strong>Attempt #{{ $existingApplication->reapply_count + 2 }}</strong>.
+                                                        @if($existingApplication->rejection_reason)
+                                                            <br><span class="rejection-reminder">Previous rejection reason: "{{ $existingApplication->rejection_reason }}"</span>
+                                                        @endif
+                                                    </p>
+                                                    <p class="reapply-notice-tip">
+                                                        <i class="bi bi-info-circle me-1"></i>
+                                                        Make sure to upload updated/improved documents to increase your chances!
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        @endif
+
                                         <div class="application-title">
-                                            <i class="bi bi-send-fill"></i>
-                                            Submit Your Application
+                                            <i class="bi bi-{{ $isReapply ? 'arrow-repeat' : 'send-fill' }}"></i>
+                                            {{ $isReapply ? 'Re-submit Your Application' : 'Submit Your Application' }}
                                         </div>
 
                                         {{-- Resume Info --}}
@@ -166,7 +267,7 @@
                                         </div>
 
                                         <form action="{{ route('users.jobs.apply', $job->id) }}" method="POST"
-                                            enctype="multipart/form-data">
+                                            enctype="multipart/form-data" id="applicationForm">
                                             @csrf
 
                                             @if ($hasTemplates)
@@ -233,7 +334,7 @@
                                                     </div>
                                                 </div>
 
-                                                {{-- Application Letter: Optional when templates exist --}}
+                                                {{-- Application Letter: Optional when templates exist 
                                                 <div class="mb-4">
                                                     <label class="form-label-custom">
                                                         <i class="bi bi-file-earmark-text"></i>
@@ -274,7 +375,7 @@
                                                 </div>
 
                                             @else
-                                                {{-- ── NO TEMPLATES: only application letter, required ── --}}
+                                                {{-- ── NO TEMPLATES: only application letter, required ── 
                                                 <div class="mb-4">
                                                     <label class="form-label-custom">
                                                         <i class="bi bi-file-earmark-text"></i>
@@ -313,11 +414,13 @@
                                                         Accepted formats: PDF, Word, JPG, PNG (Max 2MB)
                                                     </small>
                                                 </div>
+                                                --}}
                                             @endif
+                                            
 
-                                            <button type="submit" class="btn-apply-submit">
-                                                <i class="bi bi-rocket-takeoff me-2"></i>
-                                                Submit Application
+                                            <button type="submit" class="btn-apply-submit {{ $isReapply ? 'btn-reapply' : '' }}" id="submitBtn">
+                                                <i class="bi bi-{{ $isReapply ? 'arrow-repeat' : 'rocket-takeoff' }} me-2"></i>
+                                                {{ $isReapply ? 'Re-submit Application' : 'Submit Application' }}
                                             </button>
                                         </form>
                                     </div>
@@ -397,7 +500,7 @@
                 box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
                 animation: slideDown 0.3s ease-out;
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
             }
 
             .alert-success-custom {
@@ -423,6 +526,172 @@
             @keyframes fadeIn {
                 from { opacity: 0; transform: translateY(20px); }
                 to   { opacity: 1; transform: translateY(0); }
+            }
+
+            /* ── Already Applied Box ── */
+            .already-applied-box {
+                background: linear-gradient(135deg, #E8F8F5 0%, #D5F4E6 100%);
+                border: 2px solid rgba(15, 104, 72, 0.3);
+                border-radius: 14px;
+                padding: 1.5rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .already-applied-icon {
+                width: 48px;
+                height: 48px;
+                background: rgba(15, 104, 72, 0.2);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #0F6848;
+                font-size: 1.5rem;
+                flex-shrink: 0;
+            }
+
+            .already-applied-content {
+                flex: 1;
+            }
+
+            .already-applied-title {
+                color: #0F6848;
+                font-weight: 700;
+                margin-bottom: 0.5rem;
+            }
+
+            .already-applied-text {
+                color: #0F6848;
+                margin: 0;
+            }
+
+            .track-link {
+                color: #0F6848;
+                font-weight: 700;
+                text-decoration: underline;
+            }
+
+            .track-link:hover {
+                color: var(--secondary-color);
+            }
+
+            /* ── Cooldown Box ── */
+            .cooldown-box {
+                background: linear-gradient(135deg, #FFF4E6 0%, #FFE8CC 100%);
+                border: 2px solid rgba(217, 119, 6, 0.3);
+                border-radius: 14px;
+                padding: 1.5rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .cooldown-icon {
+                width: 48px;
+                height: 48px;
+                background: rgba(217, 119, 6, 0.2);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #D97706;
+                font-size: 1.5rem;
+                flex-shrink: 0;
+            }
+
+            .cooldown-content {
+                flex: 1;
+            }
+
+            .cooldown-title {
+                color: #D97706;
+                font-weight: 700;
+                margin-bottom: 0.5rem;
+            }
+
+            .cooldown-text {
+                color: #D97706;
+                margin-bottom: 1rem;
+            }
+
+            .cooldown-progress {
+                width: 100%;
+                height: 8px;
+                background: rgba(255, 255, 255, 0.5);
+                border-radius: 10px;
+                overflow: hidden;
+                margin-bottom: 0.75rem;
+            }
+
+            .cooldown-progress-bar {
+                height: 100%;
+                background: linear-gradient(90deg, #D97706, #F59E0B);
+                border-radius: 10px;
+                transition: width 0.3s ease;
+            }
+
+            .cooldown-hint {
+                color: #D97706;
+                font-size: 0.9rem;
+                margin: 0;
+                font-style: italic;
+            }
+
+            /* ── Re-apply Notice ── */
+            .reapply-notice {
+                background: linear-gradient(135deg, #FFF8F0 0%, #FFEFD5 100%);
+                border: 2px solid rgba(255, 107, 53, 0.3);
+                border-left: 4px solid var(--primary-color);
+                border-radius: 12px;
+                padding: 1.25rem;
+                display: flex;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .reapply-notice-icon {
+                width: 42px;
+                height: 42px;
+                background: rgba(255, 107, 53, 0.15);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: var(--primary-color);
+                font-size: 1.3rem;
+                flex-shrink: 0;
+            }
+
+            .reapply-notice-content {
+                flex: 1;
+            }
+
+            .reapply-notice-title {
+                color: var(--primary-color);
+                font-weight: 700;
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .reapply-notice-text {
+                color: var(--text-dark);
+                font-size: 0.9rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .rejection-reminder {
+                color: #C92A2A;
+                font-style: italic;
+                font-size: 0.85rem;
+            }
+
+            .reapply-notice-tip {
+                color: var(--text-muted);
+                font-size: 0.85rem;
+                margin: 0;
+                font-weight: 600;
             }
 
             /* ── Job Card ── */
@@ -865,25 +1134,23 @@
                 cursor: pointer;
             }
 
-            .btn-apply-submit:hover {
+            .btn-apply-submit:hover:not(:disabled) {
                 transform: translateY(-2px);
                 box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
             }
 
-            .btn-applied-disabled {
-                background: linear-gradient(135deg, #95E1D3, #7DD8C8);
-                color: #0F6848;
-                padding: 1rem 2rem;
-                border-radius: 12px;
-                font-weight: 700;
-                font-size: 1.1rem;
-                border: none;
-                width: 100%;
+            .btn-apply-submit:disabled {
+                opacity: 0.6;
                 cursor: not-allowed;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 0.5rem;
+            }
+
+            .btn-reapply {
+                background: linear-gradient(135deg, #F59E0B, #D97706);
+                box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+            }
+
+            .btn-reapply:hover:not(:disabled) {
+                box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
             }
 
             /* ── Responsive ── */
@@ -981,6 +1248,16 @@
                         }
                     });
                 });
+
+                // Form submission handling
+                const form = document.getElementById('applicationForm');
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        const submitBtn = document.getElementById('submitBtn');
+                        submitBtn.disabled = true;
+                        submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Submitting...';
+                    });
+                }
             });
         </script>
 

@@ -4,112 +4,55 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Feedbacks;  // Fixed namespace
 use Illuminate\Http\Request;
-use Illuminate\View\View;
-
 use Gate;
 use DB;
 
 class UserController extends Controller
 {
-
-
-    public function __contruct()
+    public function __construct()
     {
         $this->middleware('auth');
     }
 
-
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        // denies the gate if 
         if (Gate::denies('admin-access')) {
             return redirect('errors.403');
         }
 
-        $allusers = User::where('id', '>=', '1')->paginate(10); // get only records that start with id 3 and below
-        // query using model eloquent 
+        $allusers = User::where('id', '>=', '1')->paginate(10);
 
-
-
-
-        return view('admin.users.index')
-            ->with('allusers', $allusers);
-
+        return view('admin.users.index')->with('allusers', $allusers);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create() {}
+    public function store(Request $request) {}
+    public function show(User $user) {}
+    public function edit(User $user) {}
+    public function update(Request $request, User $user) {}
+    public function destroy(User $user) {}
+
+    public function userFeedback()
     {
-        //
+        $allfeedbacks = Feedbacks::latest()->paginate(10);  // Fixed :: and namespace
+
+        return view('admin.users.feedbacks.show')->with('allfeedbacks', $allfeedbacks);
     }
-
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(User $user)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(User $user)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, User $user)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(User $user)
-    {
-        //
-    }
-
-
-    // new function added for viewing all user feedbacks 
-    public function userfeedback()
-    {
-        $allfeedbacks = DB::table('feedbacks')
-            ->select('*')
-            ->paginate(10);
-
-        return view('admin.users.feedbacks.show')
-            ->with('allfeedbacks', $allfeedbacks);
-    }
-
 
     public function viewUser(User $user)
     {
-        // Load user with relationships
         $user->load([
             'roles',
             'jobSeeker.applications.job',
-            'employer.jobs.applications' // load applications under each job for employers
+            'jobSeeker.applications.files',
+            'jobSeeker.applications.interview',
+            'employer.jobs',
+            'employer.jobs.applications',
+            'employer.jobs.applications.interview',
         ]);
+
         return view('admin.users.view', compact('user'));
     }
 }

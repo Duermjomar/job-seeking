@@ -199,7 +199,7 @@
             <div class="row g-4">
                 
                 {{-- RECENT JOBS --}}
-                <div class="col-lg-6">
+                <div class="col-lg">
                     <div class="jobs-card">
                         <div class="card-header-custom">
                             <div class="d-flex align-items-center justify-content-between">
@@ -240,77 +240,14 @@
                     </div>
                 </div>
 
-                {{-- SYSTEM REPORTS --}}
-                <div class="col-lg-6">
-                    <div class="reports-card">
-                        <div class="card-header-custom">
-                            <h5 class="mb-0">
-                                <i class="bi bi-graph-up me-2"></i>System Reports
-                            </h5>
-                        </div>
-                        <div class="card-body-custom">
-                            <div class="report-item">
-                                <div class="report-icon">
-                                    <i class="bi bi-file-earmark-bar-graph"></i>
-                                </div>
-                                <div class="report-content">
-                                    <h6 class="report-title">User Analytics Report</h6>
-                                    <p class="report-desc">Monthly user registration trends</p>
-                                </div>
-                                <button class="btn btn-report">
-                                    <i class="bi bi-download"></i>
-                                </button>
-                            </div>
-
-                            <div class="report-item">
-                                <div class="report-icon">
-                                    <i class="bi bi-file-earmark-spreadsheet"></i>
-                                </div>
-                                <div class="report-content">
-                                    <h6 class="report-title">Job Posting Report</h6>
-                                    <p class="report-desc">Jobs posted by category and location</p>
-                                </div>
-                                <button class="btn btn-report">
-                                    <i class="bi bi-download"></i>
-                                </button>
-                            </div>
-
-                            <div class="report-item">
-                                <div class="report-icon">
-                                    <i class="bi bi-file-earmark-check"></i>
-                                </div>
-                                <div class="report-content">
-                                    <h6 class="report-title">Application Success Rate</h6>
-                                    <p class="report-desc">Acceptance vs rejection statistics</p>
-                                </div>
-                                <button class="btn btn-report">
-                                    <i class="bi bi-download"></i>
-                                </button>
-                            </div>
-
-                            <div class="report-item mb-0">
-                                <div class="report-icon">
-                                    <i class="bi bi-file-earmark-text"></i>
-                                </div>
-                                <div class="report-content">
-                                    <h6 class="report-title">Platform Activity Log</h6>
-                                    <p class="report-desc">Complete system activity history</p>
-                                </div>
-                                <button class="btn btn-report">
-                                    <i class="bi bi-download"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+   
             </div>
 
         </div>
     </div>
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
-
+      
         :root {
             --primary-color: #FF6B35;
             --primary-dark: #E85A2A;

@@ -166,7 +166,10 @@
                                                     <i class="bi bi-file-earmark-pdf-fill"></i>
                                                 </div>
                                                 <div class="file-info-large">
-                                                    <p class="file-name-large">Current Resume</p>
+                                                    {{-- NEW --}}
+                                                    <p class="file-name-large">
+                                                        {{ $jobSeeker->resume_original ?? basename($jobSeeker->resume) }}
+                                                    </p>
                                                     <small class="file-meta">
                                                         Uploaded
                                                         {{ \Carbon\Carbon::parse($jobSeeker->updated_at)->format('M d, Y') }}
@@ -677,7 +680,7 @@
 
                 const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
-                fetch('{{ route("users.resume.delete") }}', {
+                fetch('{{ route('users.resume.delete') }}', {
                         method: 'DELETE',
                         headers: {
                             'X-CSRF-TOKEN': csrfToken,
