@@ -9,33 +9,45 @@ use App\Http\Controllers\Controller;
 
 class JobSeekerController extends Controller
 {
-    public function index() {}
-    public function create() {}
-    public function store(Request $request) {}
-    public function show(string $id) {}
-     public function userEditProfile()
+    public function index()
+    {
+    }
+    public function create()
+    {
+    }
+    public function store(Request $request)
+    {
+    }
+    public function show(string $id)
+    {
+    }
+    public function userEditProfile()
     {
         $user = Auth::user();
         $jobSeeker = $user->jobSeeker;
 
         return view('Users.profile.edit', compact('jobSeeker'));
     }
-    public function update(Request $request, string $id) {}
-    public function destroy(string $id) {}
+    public function update(Request $request, string $id)
+    {
+    }
+    public function destroy(string $id)
+    {
+    }
 
     public function updateProfile(Request $request)
     {
         $validated = $request->validate([
-            'name'            => 'required|string|max:255',
-            'phone'           => 'required|string|max:20',
-            'gender'          => 'required|in:male,female,other',
-            'birthdate'       => 'required|date|before:today',
-            'address'         => 'required|string|max:255',
-            'resume'          => 'nullable|file|mimes:pdf,doc,docx|max:5120',
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'gender' => 'required|in:male,female,other',
+            'birthdate' => 'required|date|before:today',
+            'address' => 'required|string|max:255',
+            'resume' => 'nullable|file|mimes:pdf,doc,docx|max:5120',
             'profile_summary' => 'required|string|min:50',
         ]);
 
-        $user      = auth()->user();
+        $user = auth()->user();
         $jobSeeker = $user->jobSeeker;
 
         // Update user name
@@ -43,12 +55,12 @@ class JobSeekerController extends Controller
 
         // Handle resume upload — do this BEFORE fill() so we control both columns manually
         if ($request->hasFile('resume')) {
-            $resumeFile   = $request->file('resume');
+            $resumeFile = $request->file('resume');
 
             // Capture the original filename BEFORE doing anything with the file
             $originalName = $resumeFile->getClientOriginalName();         // e.g. "John_Doe_CV.pdf"
-            $extension    = $resumeFile->getClientOriginalExtension();    // e.g. "pdf"
-            $nameWithout  = pathinfo($originalName, PATHINFO_FILENAME);   // e.g. "John_Doe_CV"
+            $extension = $resumeFile->getClientOriginalExtension();    // e.g. "pdf"
+            $nameWithout = pathinfo($originalName, PATHINFO_FILENAME);   // e.g. "John_Doe_CV"
 
             // Build a unique storage name to prevent collisions between users
             $uniqueFilename = $nameWithout . '_' . $user->id . '_' . time() . '.' . $extension;
@@ -62,7 +74,7 @@ class JobSeekerController extends Controller
             $storedPath = $resumeFile->storeAs('resumes', $uniqueFilename, 'public');
 
             // Save both columns directly — do NOT go through fill() for these
-            $jobSeeker->resume          = $storedPath;    // storage path  e.g. resumes/John_Doe_CV_8_1714500000.pdf
+            $jobSeeker->resume = $storedPath;    // storage path  e.g. resumes/John_Doe_CV_8_1714500000.pdf
             $jobSeeker->resume_original = $originalName;  // display name  e.g. John_Doe_CV.pdf
         }
 
@@ -98,7 +110,7 @@ class JobSeekerController extends Controller
             }
 
             // Clear both columns directly — not through fill()
-            $jobSeeker->resume          = null;
+            $jobSeeker->resume = null;
             $jobSeeker->resume_original = null;
             $jobSeeker->save();
 
@@ -138,8 +150,8 @@ class JobSeekerController extends Controller
 
         $extension = pathinfo($filePath, PATHINFO_EXTENSION);
         $mimeTypes = [
-            'pdf'  => 'application/pdf',
-            'doc'  => 'application/msword',
+            'pdf' => 'application/pdf',
+            'doc' => 'application/msword',
             'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         ];
 
@@ -148,5 +160,36 @@ class JobSeekerController extends Controller
         return response()->download($filePath, $downloadName, [
             'Content-Type' => $contentType,
         ]);
+    }
+
+
+    public function previewResume()
+    {
+        $jobSeeker = auth()->user()->jobSeeker;
+
+        if (!$jobSeeker || !$jobSeeker->resume) {
+            abort(404, 'Resume not found');
+        }
+
+        $extension = strtolower(pathinfo($jobSeeker->resume, PATHINFO_EXTENSION));
+        $publicUrl = asset('storage/' . $jobSeeker->resume);
+        $originalName = $jobSeeker->resume_original ?? basename($jobSeeker->resume);
+
+        // PDF — serve inline directly
+        if ($extension === 'pdf') {
+            $filePath = storage_path('app/public/' . $jobSeeker->resume);
+
+            if (!file_exists($filePath)) {
+                abort(404, 'File not found');
+            }
+
+            return response()->file($filePath, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="' . $originalName . '"',
+            ]);
+        }
+
+        // Word / Excel — pass to a preview blade view
+        return view('Users.profile.resume-preview', compact('publicUrl', 'originalName', 'extension'));
     }
 }

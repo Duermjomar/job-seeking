@@ -206,7 +206,7 @@
                                 <h5 class="mb-0">
                                     <i class="bi bi-briefcase me-2"></i>Recent Jobs Posted
                                 </h5>
-                                <a href="#" class="btn-header-link">View All</a>
+                                <a href="{{ route('admin.jobs.index') }}" class="btn-header-link">View All</a>
                             </div>
                         </div>
                         <div class="card-body-custom">

@@ -84,9 +84,14 @@
                                         <label class="form-label-profile">
                                             <i class="bi bi-telephone me-2"></i>Phone Number
                                         </label>
-                                        <input type="text" name="phone" class="form-control-profile"
+                                        <input type="tel" name="phone" class="form-control-profile"
                                             placeholder="e.g. +1 234 567 8900"
-                                            value="{{ old('phone', $jobSeeker->phone ?? '') }}" required>
+                                            value="{{ old('phone', $jobSeeker->phone ?? '') }}" inputmode="numeric"
+                                            pattern="[\+]?[0-9\s\-\(\)]{7,15}"
+                                            oninput="this.value = this.value.replace(/[^0-9\+\-\(\)\s]/g, '')" maxlength="15"
+                                            required>
+                                        <small class="text-muted">Numbers only. Include country code (e.g. +63 912 345
+                                            6789)</small>
                                     </div>
 
                                     {{-- Address --}}

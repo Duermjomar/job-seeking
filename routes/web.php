@@ -16,6 +16,7 @@ use App\Http\Controllers\Users\NotificationController as UserNotificationControl
 
 
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
 
 use App\Http\Controllers\Employer\NotificationController as EmployerNotificationController;
@@ -83,6 +84,11 @@ Route::
 
             Route::get('/users/{user}', [UserController::class, 'viewUser'])->name('users.view');
 
+
+            Route::get('/jobs', [AdminController::class, 'allJobs'])->name('jobs.index');
+            Route::patch('/admin/jobs/{job}/toggle-status', [AdminController::class, 'toggleStatus'])->name('jobs.toggleStatus');
+            Route::delete('/admin/jobs/{job}', [AdminController::class, 'destroyJob'])->name('jobs.destroy');
+
             Route::prefix('notifications')->name('notifications.')->group(function () {
                 Route::get('/', [AdminNotificationController::class, 'index'])->name('index');
                 Route::get('/{id}/mark-read', [AdminNotificationController::class, 'markAsRead'])->name('mark-read');
@@ -131,6 +137,9 @@ Route::
             Route::get('/resume/download', [JobSeekerController::class, 'downloadResume'])
                 ->name('resume.download');
 
+            Route::get('/resume/preview', [JobSeekerController::class, 'previewResume'])
+                ->name('resume.preview');
+
             Route::post('/jobs/{job}/apply', [UserApplicationController::class, 'store'])
                 ->name('jobs.apply');
 
@@ -141,15 +150,14 @@ Route::
 
             Route::prefix('notifications')->name('notifications.')->group(function () {
                 Route::get('/', [UserNotificationController::class, 'index'])->name('index');
-                Route::get('/{id}/mark-read', [UserNotificationController::class, 'markAsRead'])->name('mark-read');
                 Route::post('/mark-all-read', [UserNotificationController::class, 'markAllAsRead'])->name('mark-all-read');
-                Route::delete('/{id}', [UserNotificationController::class, 'destroy'])->name('destroy');
-                Route::delete('/clear-read', [UserNotificationController::class, 'clearRead'])->name('clear-read');
-
-                // AJAX endpoints
                 Route::get('/unread-count', [UserNotificationController::class, 'getUnreadCount'])->name('unread-count');
                 Route::get('/latest', [UserNotificationController::class, 'getLatest'])->name('latest');
 
+                // ✅ Static routes BEFORE wildcard {id}
+                Route::delete('/clear-read', [UserNotificationController::class, 'clearRead'])->name('clear-read');
+                Route::post('/{id}/mark-read', [UserNotificationController::class, 'markAsRead'])->name('mark-read'); // changed to POST
+                Route::delete('/{id}', [UserNotificationController::class, 'destroy'])->name('destroy');
             });
 
             Route::get('/interviews/{interview}', [UsersInterviewController::class, 'show'])
@@ -209,10 +217,12 @@ Route::prefix('employer')
             Route::get('/', [EmployerNotificationController::class, 'index'])->name('index');
             Route::get('/{id}/mark-read', [EmployerNotificationController::class, 'markAsRead'])->name('mark-read');
             Route::post('/mark-all-read', [EmployerNotificationController::class, 'markAllAsRead'])->name('mark-all-read');
-            Route::delete('/{id}', [EmployerNotificationController::class, 'destroy'])->name('destroy');
-            Route::delete('/clear-read', [EmployerNotificationController::class, 'clearRead'])->name('clear-read');
             Route::get('/unread-count', [EmployerNotificationController::class, 'getUnreadCount'])->name('unread-count');
             Route::get('/latest', [EmployerNotificationController::class, 'getLatest'])->name('latest');
+
+            // ✅ Static DELETE routes BEFORE wildcard {id}
+            Route::delete('/clear-read', [EmployerNotificationController::class, 'clearRead'])->name('clear-read');
+            Route::delete('/{id}', [EmployerNotificationController::class, 'destroy'])->name('destroy');
         });
     });
 

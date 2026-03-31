@@ -120,4 +120,15 @@ class User extends Authenticatable
 
 
 
+    /**
+     * Jobs created by this user as employer
+     * Use this if jobs.employer_id references users.id directly
+     */
+    public function employedJobs()
+    {
+        return $this->hasMany(Job::class, 'employer_id');
+    }
+
+
+
 }

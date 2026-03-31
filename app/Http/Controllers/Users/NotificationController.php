@@ -15,34 +15,34 @@ class NotificationController extends Controller
     public function index()
     {
         $user = Auth::user();
-        
+
         // Get all notifications paginated
         $notifications = $user->notifications()
             ->latest()
             ->paginate(15);
-        
+
         // Get unread count
         $unreadCount = $user->unreadNotificationsCount();
-        
-        return view('Employer.notifications.index', compact('notifications', 'unreadCount'));
+
+        return view('users.notifications.index', compact('notifications', 'unreadCount'));
     }
 
     /**
      * Mark a single notification as read
      */
+    // Change the route to POST and update the method signature
     public function markAsRead($id)
     {
         $notification = Notification::where('id', $id)
             ->where('user_id', Auth::id())
             ->firstOrFail();
-        
+
         $notification->markAsRead();
-        
-        // Redirect to action URL if exists
+
         if ($notification->action_url) {
             return redirect($notification->action_url);
         }
-        
+
         return back()->with('success', 'Notification marked as read.');
     }
 
@@ -52,7 +52,7 @@ class NotificationController extends Controller
     public function markAllAsRead()
     {
         Auth::user()->markAllNotificationsAsRead();
-        
+
         return back()->with('success', 'All notifications marked as read.');
     }
 
@@ -64,9 +64,9 @@ class NotificationController extends Controller
         $notification = Notification::where('id', $id)
             ->where('user_id', Auth::id())
             ->firstOrFail();
-        
+
         $notification->delete();
-        
+
         return back()->with('success', 'Notification deleted successfully.');
     }
 
@@ -78,7 +78,7 @@ class NotificationController extends Controller
         Notification::where('user_id', Auth::id())
             ->where('read', true)
             ->delete();
-        
+
         return back()->with('success', 'Read notifications cleared.');
     }
 
@@ -88,7 +88,7 @@ class NotificationController extends Controller
     public function getUnreadCount()
     {
         $count = Auth::user()->unreadNotificationsCount();
-        
+
         return response()->json(['count' => $count]);
     }
 
@@ -102,7 +102,7 @@ class NotificationController extends Controller
             ->latest()
             ->take(5)
             ->get();
-        
+
         return response()->json([
             'notifications' => $notifications,
             'unread_count' => Auth::user()->unreadNotificationsCount(),

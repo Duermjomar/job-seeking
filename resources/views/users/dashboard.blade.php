@@ -154,8 +154,7 @@
                                 </p>
 
                                 @if ($jobSeeker->resume)
-                                    <a href="{{ asset('storage/' . $jobSeeker->resume) }}" target="_blank"
-                                        class="btn-view-resume">
+                                    <a href="{{ route('users.resume.preview') }}" target="_blank" class="btn-view-resume">
                                         <i class="bi bi-file-earmark-text-fill me-2"></i>View Resume
                                     </a>
                                 @endif

@@ -32,15 +32,9 @@ class UsersTableSeeder extends Seeder
             'password' => Hash::make('admin')
         ]);
 
-        $admin1 = User::create([
-            'name' => 'Administrator(Leo)',
-            'email' => 'l30pmsit@gmail.com',
-            'password' => Hash::make('1234')
-        ]);
-
         // Attach admin role
         $admin->roles()->attach($adminRole);
-        $admin1->roles()->attach($adminRole);
+     
 
         // ===== CREATE EMPLOYERS =====
         foreach(range(1,5) as $i) {
@@ -62,7 +56,7 @@ class UsersTableSeeder extends Seeder
         $user->roles()->attach($userRole);
 
         // Additional 20 users
-        foreach(range(1,20) as $i) {
+        foreach(range(1,5) as $i) {
             $u = User::create([
                 'name' => 'User'.$i,
                 'email' => 'user'.$i.'@gmail.com',

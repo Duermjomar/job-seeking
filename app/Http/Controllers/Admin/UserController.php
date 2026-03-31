@@ -27,12 +27,24 @@ class UserController extends Controller
         return view('admin.users.index')->with('allusers', $allusers);
     }
 
-    public function create() {}
-    public function store(Request $request) {}
-    public function show(User $user) {}
-    public function edit(User $user) {}
-    public function update(Request $request, User $user) {}
-    public function destroy(User $user) {}
+    public function create()
+    {
+    }
+    public function store(Request $request)
+    {
+    }
+    public function show(User $user)
+    {
+    }
+    public function edit(User $user)
+    {
+    }
+    public function update(Request $request, User $user)
+    {
+    }
+    public function destroy(User $user)
+    {
+    }
 
     public function userFeedback()
     {
@@ -43,14 +55,26 @@ class UserController extends Controller
 
     public function viewUser(User $user)
     {
+        $user->load('roles');
+
+        // Load job seeker data
+        if ($user->jobSeeker) {
+            $user->load([
+                'jobSeeker.applications.job',
+                'jobSeeker.applications.files',
+                'jobSeeker.applications.interview',
+            ]);
+        }
+
+        // Load employer profile (employers table) if it exists
+        if ($user->employer) {
+            $user->load(['employer']);
+        }
+
+        // Always load jobs directly linked via employer_id on jobs table
         $user->load([
-            'roles',
-            'jobSeeker.applications.job',
-            'jobSeeker.applications.files',
-            'jobSeeker.applications.interview',
-            'employer.jobs',
-            'employer.jobs.applications',
-            'employer.jobs.applications.interview',
+            'employedJobs.applications.jobSeeker.user',
+            'employedJobs.applications.interview',
         ]);
 
         return view('admin.users.view', compact('user'));
